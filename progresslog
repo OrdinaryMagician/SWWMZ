@@ -1,0 +1,135 @@
+Legend:
+- To do
+X Done
+P Partial
+F Failed
+C Currently in progress
+
+Alpha:
+  X Start project
+  C Introductory text
+  - Base classes
+    - MWeapon
+    - MAmmo
+    - MArmor
+    - MHealth
+    - MPowerup
+    - MSWWMZMutator
+    - MMultiItem
+    - MDropper
+    - MQsm
+    - MParticle
+    - MHUD
+  - Weapons
+    - Unlimited Chainsaw Works
+      - Throwable chainsaw
+      - Chainsaw spam altfire
+    - Deep Impact Hammer
+      - Air push
+      - Air blast
+    - Zapper
+      - Don't taze me bro
+      - Feel like a Sith lord
+    - Explodium Gun
+      - Obviously made of explodium
+      - That's not how you use a gun
+    - Spreadgun
+      - Rhino stopper in action
+    - Enhanced Biorifle
+      - Icky sticky goop physics
+        - Goop AI
+      - Blob deployment
+        - Blob AI
+    - Napalm Gun
+      - Kill it with fire!
+      - Inflammable means flammable?
+    - Legacy Sparkster
+      - Fuzzy little balls
+      - Massive ball of fuzz (and death)
+        - Big projectile AI
+    - Modern Sparkster
+      - Kynilum projectile
+      - Nokron projectile
+    - PROWEL
+      - PROWEL farts up in the TADEL
+      - Doug's Grate Law Sine Waves
+      - Dean's Make-a-fun Gag-a-thon
+    - Revenge of the Miniclone Machine
+      - Miniclone
+      - Kamikaze Miniclone
+    - Gravity Gun
+      - Grab beam
+      - Grapple beam
+      - Elasticity physics
+    - Betapulse
+      - Spinning ball attack
+      - Tentacle rape
+    - Splatter
+      - Splatter beam
+      - Splatter ball
+      - Combo
+    - Eviscerator
+      - Hot chunks o' lead
+      - Shitstorm bomb
+    - Spamgun
+      - Moderate spam
+      - Absurd spam
+    - Neutralizer
+      - Line beam
+      - Energy grenade
+    - Chaos Cannon
+      - Chaosworms
+      - Chaosbomb
+    - Fire Cannon
+      - HE mortars
+      - Incendiary mortars
+    - Hellraiser
+      - Hellraiser missile
+      - Hellraiser grenade
+    - Quadshot
+      - Single shot
+      - Quad shot
+    - Mortal Rifle
+      - Rapid fire
+      - Radiation beam
+      - Grenades
+      - Leech darts
+    - Silver Bullet
+      - Dislocated shoulders everywhere
+    - Messup Machine
+      - Impending doom
+    - Mortal Cannon Artifact
+      - Explode
+      - Implode
+    - Candy Gun
+      - Taste the sweetness
+      - Eat the candy
+    - Ynykron Artifact
+      - Straight beam
+      - Chaser beam
+    - Super Happy Fun Ball
+      - Bounce around
+      - Effective face remover
+  - Pickups
+    - Armor
+      - Armor Bonus
+      - Blast Suit
+      - War Armor
+    - Health
+      - Health Bonus
+      - Health Cube
+      - Refresher
+    - Powerups
+      - Deflector
+      - Ghost Artifact
+      - Ragekit
+      - Gravity suppressor
+Beta:
+  - Bot AI improvements
+    - Have bots learn how to use air push
+    - Teach bots proper gravity gun usage (this will be hard)
+    - Teach bots how to play with the happy fun ball (oh dear)
+    - Teach bots about rocket jumping
+  - Probably more weapons and pickups (?)
+Gold:
+  - Netcode, maybe?

@@ -7,17 +7,19 @@ C Currently in progress
 
 Alpha:
   X Start project
-  C Introductory text
-  - Base classes
+  X Introductory text
+  C Base classes
+    - MLayer
+    - MWeaponBlock
     - MWeapon
-    - MAmmo
+    X MAmmo
     - MArmor
     - MHealth
     - MPowerup
     - MSWWMZMutator
-    - MMultiItem
-    - MDropper
-    - MQsm
+    X MMultiItem
+    X MUtil
+    X MQsm
     - MParticle
     - MHUD
   - Weapons

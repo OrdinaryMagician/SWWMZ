@@ -147,6 +147,9 @@ weapon set and can pick up items.
 Secondary fire drops kamikaze miniclones, they carry no weapons and blow up
 when getting close enough to a target.
 
+Be advised, these Malcoms don't make rhymes or ask for big macs. They're the
+real deal.
+
 #### Gravity Gun, replaces Pulsegun
 
 Signature weapon of the Znv Ultra Suite. In this incarnation, it really

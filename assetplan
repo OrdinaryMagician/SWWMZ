@@ -1,0 +1,120 @@
+Unlimited Chainsaw Works
+ -> uses vanilla chainsaw model
+ -> green recolor
+ -> use vanilla sounds
+Deep Impact Hammer
+ -> uses vanilla impact hammer model
+ -> blue recolor (as usual)
+ -> reuse SWWM fx textures and sounds
+Zapper
+ -> uses vanilla dispersion pistol model (upgrade stage 2)
+ -> gold retexture
+ -> reuse SWWM storm rifle textures and sounds
+Explodium Gun
+ -> uses vanilla enforcer model
+ -> red recolor, pretty much same as SWWM
+ -> reuse SWWM sounds and effects too
+Spreadgun
+ -> uses vanilla enforcer model
+ -> blue recolor
+ -> reuse sounds from Instant Action 3 spreadgun
+Enhanced Biorifle
+ -> uses vanilla biorifle model
+ -> cyan-ish retexture (bloblet edition)
+ -> reuse SWWM sounds from biorifle 3
+Napalm Gun
+ -> uses vanilla unreal biorifle model
+ -> fire recolor (obviously)
+ -> reuse Znv_us sounds and effects
+Legacy Sparkster
+ -> uses vanilla asmd model
+ -> blue-ish recolor, just as it was in UnSX 1
+ -> use vanilla sounds like in UnSX 1 (might need to export and re-import some)
+Modern Sparkster
+ -> uses vanilla asmd model
+ -> yellow-ish recolor, just as it was in UnSX 2
+ -> reuse sounds from SWWM
+PROWEL
+ -> uses vanilla rocket launcher model
+ -> black and yellow recolor
+ -> borrow the "Whee" sounds from Russian Overkill, I hope PB doesn't mind
+ -> reuse some random assets from SWWM and Znv_us
+Revenge of the Miniclone Machine
+ -> direct port from old SWWM with enhancements, that's all
+Gravity Gun
+ -> direct port from Znv_us with rewritten behavior, that's all
+Betapulse
+ -> uses UT beta model and textures
+ -> dunno what sounds to use
+ -> effects will just be vanilla recolors
+Splatter
+ -> uses vanilla shock rifle model
+ -> white recolor, as expected
+ -> reuse old splatter assets
+Eviscerator
+ -> uses vanilla flak cannon model
+ -> reuse old SWWM textures
+ -> reuse old SWWM sounds and effects
+Spamgun
+ -> uses vanilla minigun model
+ -> reuse SMW.03 assets, including textures
+Neutralizer
+ -> uses vanilla flak cannon model
+ -> desaturated blue-ish retexture
+ -> dunno about other assets
+Chaos Cannon
+ -> direct port with enhancements
+Fire Cannon
+ -> direct port with rewritten behavior
+Hellraiser
+ -> direct port with enhancements
+Quadshot
+ -> use reanimated model from SWWM
+ -> use vanilla unreal textures with a slight blue-ish tint like in UnSX 2
+ -> reuse surviving assets from UnSX 2 and 3, which were still used by old SWWM
+Mortal Rifle
+ -> use vanilla sniper rifle model
+ -> cyan-ish recolor like in UnSX 2 (yes, it wasn't purple by then)
+ -> replicate old sfx usage (vanilla sounds at different pitches)
+Silver Bullet
+ -> use vanilla sniper rifle model
+ -> vanilla textures, no need for more
+ -> practically a direct port with rewritten behavior anyway
+Messup Machine
+ -> same thing
+Mortal Cannon
+ -> recycle SWWM everything
+Candy Gun
+ -> use vanilla enforcer with pink recolor
+ -> same effects as explodium gun but with pink color
+Ynykron Artifact
+ -> guess what, same exact model and textures as Nekrodero
+ -> find decent sounds
+Super Happy Fun Ball
+ -> just pick any sphere mesh, animation can be done on the fly with offsets
+ -> make a silly little texture for it and find some fun sounds
+Health Bonus
+ -> it's a goddamn vial with different textures
+Health Cube
+ -> dice mesh with a new texture, bleh
+Refresher
+ -> like in UnSX, use the monk statue model with a glowy environment map
+Armor Bonus
+ -> random scrap metal meshes (flak cannon chunks), similar to serious sam
+Blast Suit
+ -> vanilla kevlar armor model
+ -> redd-ish recolor
+War Armor
+ -> vanilla UT armor model
+ -> black and gold recolor
+Deflector
+ -> direct port
+Ghost Artifact
+ -> TMale1 with environment map, duh
+ -> reuse those fancy q3a sounds
+Ragekit
+ -> dice mesh
+ -> red skull on brushed metal
+ -> find some extreme endless shouting sound, or just go with Doom 3 berserk
+Gravity suppressor
+ -> red-colored anti-grav boots, that's it

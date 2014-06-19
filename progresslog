@@ -9,8 +9,8 @@ Alpha:
   X Start project
   X Introductory text
   C Base classes
-    - MLayer
-    - MWeaponBlock
+    X MLayer
+    X MWeaponBlock
     - MWeapon
     X MAmmo
     - MArmor
@@ -20,7 +20,11 @@ Alpha:
     X MMultiItem
     X MUtil
     X MQsm
-    - MParticle
+    X MQSE
+    - MDust
+    - MSpark(s)
+    - MChip
+    F MParticle
     - MHUD
   - Weapons
     - Unlimited Chainsaw Works

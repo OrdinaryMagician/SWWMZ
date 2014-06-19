@@ -36,12 +36,14 @@ class MQsm extends Actor;
 var() float InitialSize, InitKick, InitGlow, DecelRate;
 var() float GrowRange[2];
 var() Texture Frames[20];
+var() int NumFrames;
 var() float LifeRange[2];
 var() float Accels[2];
 
 var float AccelZ, AccelAdd, DLifeSpan, SLifeSpan, FrameRate, fcnt;
 var Vector RealVelocity, UpwardsVelocity;
 var bool initit;
+var int FrameN;
 
 function PostBeginPlay()
 {
@@ -60,7 +62,8 @@ function Timer()
 	Texture = Frames[0];
 	Velocity += (InitKick*FRand())*VRand();
 	RealVelocity = Velocity;
-	FrameRate = SLifeSpan/20;
+	FrameRate = SLifeSpan/NumFrames;
+	FrameN = 0;
 	initit = true;
 	// Additions from QSM 1.4 (XGravity aka Znv_us)
 	RotationRate.Roll = Rand(65536)-32768;
@@ -86,7 +89,7 @@ function Tick( float DeltaTime )
 	{
 		fcnt = 0;
 		FrameN++;
-		if ( FrameN < 20 )
+		if ( FrameN < NumFrames )
 			Texture = Frames[FrameN];
 	}
 	if ( DLifeSpan <= 0 )
@@ -142,6 +145,7 @@ defaultproperties
 	Frames(17)=Texture'SWWMZ.qsm_a17'
 	Frames(18)=Texture'SWWMZ.qsm_a18'
 	Frames(19)=Texture'SWWMZ.qsm_a19'
+	NumFrames=20
 	LifeRange(0)=0.95
 	LifeRange(1)=1.59
 	Accels(0)=68.0

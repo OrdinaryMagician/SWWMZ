@@ -212,7 +212,7 @@ Primary fire is a moderately spammy high speed stream of bullets.
 Secondary fire is absurdly spammier. There is practically no hope for anything
 that gets caught under fire.
 
-This weapon also has the potential of frying the engine.
+This weapon also has the potential of frying the engine, and send you flying.
 
 #### Neutralizer, replaces Minigun
 

@@ -11,11 +11,12 @@ Alpha:
   C Base classes
     X MLayer
     X MWeaponBlock
-    - MWeapon
+    C MWeapon
+    - MCharaKeeper
     X MAmmo
-    - MArmor
-    - MHealth
-    - MPowerup
+    X MArmor
+    X MHealth
+    X MPowerup
     - MSWWMZMutator
     X MMultiItem
     X MUtil

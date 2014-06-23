@@ -53,9 +53,9 @@ Begin:
 		i = StartingSlot;
 	}
 	PlaySound(SpawnSound);
-	CurrentItem = Spawn(Items[i],,, Location+Offsets[i]+vect(0,0,1)
+	Current = Spawn(Items[i],,, Location+Offsets[i]+vect(0,0,1)
 		*Items[i].Default.CollisionHeight);
-	if ( CurrentItem == None )
+	if ( Current == None )
 	{
 		Sleep(Durations[i]);
 		i++;
@@ -63,15 +63,14 @@ Begin:
 			i = 0;
 		Goto('Begin');
 	}
-	if ( CurrentItem.IsA('MWeapon') && WeaponStay )
-		MWeapon(CurrentItem).bWeaponStay = MWeapon(CurrentItem)
-			.IsSuperWeapon;
+	if ( Current.IsA('MWeapon') && WeaponStay )
+		MWeapon(Current).bWeaponStay = MWeapon(Current).IsSuperWeapon;
 	Sleep(Durations[i]);
 	i++;
 	if ( i >= UsedSlots )
 		i = 0;
-	if ( CurrentItem != None )
-		CurrentItem.Destroy();
+	if ( Current != None )
+		Current.Destroy();
 	Goto('Begin');
 }
 

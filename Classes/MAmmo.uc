@@ -26,8 +26,12 @@ function SetOverlay()
 	if ( Owner != None )
 		return;
 	for ( i=0; i<8; i++ )
-		Overlayer.MultiSkins[i] = (GlowSkins[i]!=None)?GlowSkins[i]
-			:Texture'SWWMZ.Invisible';
+	{
+		if ( GlowSkins[i] != None )
+			Overlayer.MultiSkins[i] = GlowSkins[i];
+		else
+			Overlayer.MultiSkins[i] = Texture'SWWMZ.Invisible';
+	}
 }
 
 Auto State Pickup

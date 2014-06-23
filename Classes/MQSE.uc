@@ -50,7 +50,7 @@ var() Sound SpawnSound;
 
 var float DLifeSpan, SLifeSpan, FrameRate, fcnt;
 var bool initit;
-var int FrameN;
+var int FrameN, i;
 
 event PostBeginPlay()
 {

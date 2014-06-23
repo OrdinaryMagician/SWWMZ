@@ -3,6 +3,7 @@
 //
 // A gross hack to make carried weapons shootable.
 //=============================================================================
+class MWeaponBlock extends Actor;
 
 // Now seriously, this engine is complete shit to work with for things like
 // these. I have only three possible ways to implement this properly.
@@ -18,10 +19,8 @@
 //
 //   -- Marisa
 
-var() Sound HitSound[3];
 var MWeapon MyWeapon;
 var Pawn PO;
-var int Health;
 var bool Initialized;
 
 function Setup( MWeapon W, Pawn P )
@@ -29,13 +28,13 @@ function Setup( MWeapon W, Pawn P )
 	MyWeapon = W;
 	if ( P != None )
 		PO = P;
-	Health = W.Health;
 	Initialized = True;
 	SetCollisionSize(W.CollisionRadius,W.CollisionHeight);
 }
 
 event Tick( float DeltaTime )
 {
+	local Vector X,Y,Z, Offset;
 	if ( !Initialized )
 		return;
 	if ( (MyWeapon == None) || ((PO != None) && ((PO.Health < 0)
@@ -55,7 +54,7 @@ event Tick( float DeltaTime )
 	SetLocation(MyWeapon.Location);
 	if ( MyWeapon.IsInState('Sleeping') )
 	{
-		Health = MyWeapon.Default.Health;
+		MyWeapon.Health = MyWeapon.Default.Health;
 		SetCollision(False);
 		bProjTarget = False;
 		return;
@@ -69,25 +68,16 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector HitLocation,
 {
 	if ( (MyWeapon == None) || MyWeapon.IsInState('Sleeping') )
 		return;
-	Health -= Damage;
 	if ( HitLocation == vect(0,0,0) )
 		HitLocation = Location;
-	PlaySound(HitSound[Rand(3)],SLOT_Interact,1.5,,,0.8+FRand()*0.4);
-	Spawn(class'MQsm',,, HitLocation, Rotator(HitLocation-Location));
-	Spawn(class'MSparks',,, HitLocation, Rotator(HitLocation-Location));
-	if ( Health <= 0 )
-	{
-		Instigator = InstigatedBy;
-		MyWeapon.VolatileFunction();
+	MyWeapon.TakeDamage(Damage,InstigatedBy,HitLocation,Momentum,
+		DamageType);
+	if ( MyWeapon.Health <= 0 )
 		Destroy();
-	}
 }
 
 defaultproperties
 {
-	HitSound(0)=Sound'SWWMZ.WeaponHit1'
-	HitSound(1)=Sound'SWWMZ.WeaponHit2'
-	HitSound(2)=Sound'SWWMZ.WeaponHit3'
 	bHidden=True
 	bGameRelevant=True
 	bIsKillGoal=True

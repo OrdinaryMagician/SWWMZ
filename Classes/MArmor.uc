@@ -87,7 +87,7 @@ Auto State Pickup
 		{
 			copy = SpawnCopy(P);
 			copy.GiveTo(P);
-			copy.CurrentArmor = ArmorAmount;
+			MArmor(copy).CurrentArmor = ArmorAmount;
 		}
 		SetRespawn();
 	}

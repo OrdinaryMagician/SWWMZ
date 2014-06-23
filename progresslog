@@ -11,22 +11,22 @@ Alpha:
   C Base classes
     X MLayer
     X MWeaponBlock
-    C MWeapon
-    - MCharaKeeper
+    X MWeapon
+    X MCharaKeeper
     X MAmmo
     X MArmor
     X MHealth
     X MPowerup
-    - MSWWMZMutator
+    C MSWWMZMutator
     X MMultiItem
     X MUtil
     X MQsm
     X MQSE
-    - MDust
-    - MSpark(s)
-    - MChip
+    C MDust
+    X MSpark(s)
+    C MChip
     F MParticle
-    - MHUD
+    C MHUD
   - Weapons
     - Unlimited Chainsaw Works
       - Throwable chainsaw

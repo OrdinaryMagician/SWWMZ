@@ -5,7 +5,7 @@
 //=============================================================================
 class MHealth extends TournamentPickup abstract;
 
-var() int HealingAmount
+var() int HealingAmount;
 var() int HealingMax;
 
 // TODO make healing undesirable if a nearby teammate has less health

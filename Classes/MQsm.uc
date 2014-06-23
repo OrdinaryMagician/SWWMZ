@@ -57,7 +57,7 @@ function Timer()
 		Destroy();
 	DrawScale = InitialSize;
 	AccelAdd = Accels[1];
-	SLifeSpan = RandRange(LifeRange[0],LifeRange[1];
+	SLifeSpan = RandRange(LifeRange[0],LifeRange[1]);
 	DLifeSpan = SLifeSpan;
 	Texture = Frames[0];
 	Velocity += (InitKick*FRand())*VRand();
@@ -75,7 +75,7 @@ function Tick( float DeltaTime )
 	local Vector ViewSpot;
 	if ( !initit )
 		return;
-	AccelZ = FMin(Accels[0],AccelZ+AccelAdd*(0.8+0.4*FRand()*DeltaTime);
+	AccelZ = FMin(Accels[0],AccelZ+AccelAdd*(0.8+0.4*FRand()*DeltaTime));
 	UpwardsVelocity.Z = FMin(Accels[0],UpwardsVelocity.Z+AccelZ*(0.8+0.4
 		*FRand())*DeltaTime);
 	ScaleGlow = (DLifeSpan/SLifeSpan)*InitGlow;
@@ -98,7 +98,7 @@ function Tick( float DeltaTime )
 	ViewSpot = class'MUtil'.static.GetCameraSpot(self);
 	FaceRot = Rotator(Location-ViewSpot);
 	FaceRot.Roll = Rotation.Roll;
-	SetRotation(temprot);
+	SetRotation(FaceRot);
 }
 
 function HitWall( Vector HitNormal, Actor Wall )

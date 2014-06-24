@@ -1,4 +1,4 @@
-Legend:
+ºLegend:
 - To do
 X Done
 P Partial
@@ -22,9 +22,9 @@ Alpha:
     X MUtil
     X MQsm
     X MQSE
-    C MDust
+    X MDust
     X MSpark(s)
-    C MChip
+    X MChip
     F MParticle
     C MHUD
   - Weapons

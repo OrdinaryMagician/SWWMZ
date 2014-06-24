@@ -5,8 +5,6 @@
 //=============================================================================
 class MAmmo extends TournamentAmmo abstract;
 
-#exec TEXTURE IMPORT NAME=Invisible FILE=Textures\Invisible.pcx
-
 var(Display) texture GlowSkins[8];
 var() bool CanExplode;
 

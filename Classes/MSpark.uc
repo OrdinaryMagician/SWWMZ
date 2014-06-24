@@ -31,7 +31,7 @@ defaultproperties
 	CollisionRadius=1.0
 	CollisionHeight=1.0
 	Texture=Texture'Botpack.Sparky'
-	DrawScale=0.2
+	DrawScale=0.06
 	ScaleGlow=3.0
 	Style=STY_Translucent
 	Physics=PHYS_Projectile

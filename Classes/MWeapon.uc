@@ -6,10 +6,6 @@
 //=============================================================================
 class MWeapon extends TournamentWeapon abstract;
 
-#exec SOUND IMPORT NAME=WeaponHit1 FILE=Sounds\WeaponHit1.wav
-#exec SOUND IMPORT NAME=WeaponHit2 FILE=Sounds\WeaponHit2.wav
-#exec SOUND IMPORT NAME=WeaponHit3 FILE=Sounds\WeaponHit3.wav
-
 // Stuff
 var() bool IsSuperWeapon;
 
@@ -50,7 +46,7 @@ var(Recoil) float RecoilFuzz;
 
 // Volatility variables
 var(Volatility) int Health;
-var(Volatility) Sound HitSound[3];
+var(Volatility) Sound HitSound[5];
 var MWeaponBlock Hitbox;
 var bool WasOwned;
 var Pawn OldOwner;
@@ -647,5 +643,7 @@ defaultproperties
 	HitSound(0)=Sound'SWWMZ.WeaponHit1'
 	HitSound(1)=Sound'SWWMZ.WeaponHit2'
 	HitSound(2)=Sound'SWWMZ.WeaponHit3'
+	HitSound(3)=Sound'SWWMZ.WeaponHit4'
+	HitSound(4)=Sound'SWWMZ.WeaponHit5'
 	bNoSmooth=False
 }

@@ -186,7 +186,7 @@ function SetupHUD( Canvas Canvas )
 		&& PlayerOwner.ViewTarget.IsA('Pawn') )
 		PO = Pawn(PlayerOwner.ViewTarget);
 	else
-		PO = Pawn(Owner);
+		PO = PlayerOwner;
 	Canvas.Reset();
 	Canvas.SpaceX = 0;
 	Canvas.bNoSmooth = True;

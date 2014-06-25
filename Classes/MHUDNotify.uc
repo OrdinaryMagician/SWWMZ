@@ -8,13 +8,6 @@ Class MHudNotify extends SpawnNotify;
 event Actor SpawnNotification( Actor A )
 {
 	local MHUD N;
-	if ( A.Owner.IsA('Spectator') )
-	{
-		A.Destroy();
-		N = Spawn(Class'SWWMZ.MHUD',A.Owner);
-		N.HUDType = HUD_Spectator;
-		return N;
-	}
 	if ( A.Class.Name == 'AssaultHUD' )
 	{
 		A.Destroy();

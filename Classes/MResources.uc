@@ -30,10 +30,10 @@ class MResources extends Actor abstract;
 
 // Qsm
 #exec MESH IMPORT MESH=qsm ANIVFILE=Models\Flat_a.3d DATAFILE=Models\Flat_d.3d
-#exec MESH ORIGIN MESH=qsm YAW=-64
+#exec MESH ORIGIN MESH=qsm YAW=64
 #exec MESH SEQUENCE MESH=qsm SEQ=All STARTFRAME=0 NUMFRAMES=1
 #exec MESHMAP NEW MESHMAP=qsm MESH=qsm
-#exec MESHMAP SCALE MESHMAP=qsm X=0.125 Y=0.25 Z=0.25
+#exec MESHMAP SCALE MESHMAP=qsm X=0.125 Y=0.01 Z=0.25
 
 #exec TEXTURE IMPORT NAME=qsm_00 FILE=Textures\qsm_a00.pcx
 #exec TEXTURE IMPORT NAME=qsm_01 FILE=Textures\qsm_a01.pcx
@@ -85,3 +85,16 @@ class MResources extends Actor abstract;
 #exec TEXTURE IMPORT NAME=dust_18 FILE=Textures\dust_a18.pcx
 #exec TEXTURE IMPORT NAME=dust_19 FILE=Textures\dust_a19.pcx
 
+// HUD stuff
+#exec TEXTURE IMPORT NAME=Gradient0 FILE=Textures\gradient0.pcx
+#exec TEXTURE IMPORT NAME=Gradient90 FILE=Textures\gradient90.pcx
+#exec TEXTURE IMPORT NAME=Gradient180 FILE=Textures\gradient180.pcx
+#exec TEXTURE IMPORT NAME=Gradient270 FILE=Textures\gradient270.pcx
+#exec TEXTURE IMPORT NAME=Gradient45 FILE=Textures\gradient45.pcx
+#exec TEXTURE IMPORT NAME=Gradient135 FILE=Textures\gradient135.pcx
+#exec TEXTURE IMPORT NAME=Gradient225 FILE=Textures\gradient225.pcx
+#exec TEXTURE IMPORT NAME=Gradient315 FILE=Textures\gradient315.pcx
+#exec TEXTURE IMPORT NAME=NGradient45 FILE=Textures\ngradient45.pcx
+#exec TEXTURE IMPORT NAME=NGradient135 FILE=Textures\ngradient135.pcx
+#exec TEXTURE IMPORT NAME=NGradient225 FILE=Textures\ngradient225.pcx
+#exec TEXTURE IMPORT NAME=NGradient315 FILE=Textures\ngradient315.pcx

@@ -16,7 +16,6 @@ enum EHUDType
 	HUD_Domination,
 	HUD_CaptureTheFlag,
 	HUD_Assault,
-	HUD_Spectator,
 };
 var EHUDType HUDType;
 
@@ -44,19 +43,118 @@ var bool ShowInfo;
 var ServerInfo ServerInfo;
 
 // Timers
-var float MOTDFade;
+var float MOTDTime;
 
-event Timer()
+// Stats
+var PlayerReplicationInfo Ranks[32];
+var byte RanksTeam[4];
+
+// Projection utils (thank you Wormbo)
+function bool MapToHUD( out Vector Res, Rotator ViewRotation, float FOV,
+	Vector TargetDir, Canvas Canvas )
 {
-	if ( MOTDFade > 0.0 )
-		MOTDFade -= 0.05;
-	Super.Timer();
+	local float TanFOVx,TanFOVy, TanX,TanY, dx,dy;
+	local Vector X,Y, Dir, XY;
+	TanFOVx = Tan(FOV*Pi/360);
+	TanFOVY = (Canvas.ClipY/Canvas.ClipX)*TanFOVx;
+	GetAxes(ViewRotation,Dir,X,Y);
+	Dir *= TargetDir dot Dir;
+	XY = TargetDir-Dir;
+	dx = XY dot X;
+	dy = XY dot Y;
+	TanX = dx/VSize(dir);
+	TanY = dy/VSize(dir);
+	Res.X = Canvas.ClipX*0.5*(1+TanX/TanFOVx);
+	Res.Y = Canvas.ClipY*0.5*(1-TanY/TanFOVy);
+	return ((Dir dot Vector(ViewRotation) > 0) && (Res.X == FClamp(Res.X,
+		Canvas.OrgX,Canvas.ClipX)) && (Res.Y == FClamp(Res.Y,
+		Canvas.OrgY,Canvas.ClipY)));
+}
+
+function bool WorldToScreen( Canvas Canvas, Vector Spot, out Vector ScreenLoc )
+{
+	local Vector CamLoc;
+	local Rotator CamRot;
+	local Actor Camera;
+	Canvas.Viewport.Actor.PlayerCalcView(Camera,CamLoc,CamRot);
+	return MapToHUD(ScreenLoc,CamRot,Canvas.Viewport.Actor.FOVAngle,
+		Normal(Spot-CamLoc),Canvas);
+}
+
+function Actor ScreenToWorld( Canvas Canvas, float PosX, float PosY )
+{
+	local Actor Other;
+	local Vector HitLocation, HitNormal, StartTrace, EndTrace, Direction;
+	Direction.X = 1/Tan(PO.FOVAngle/2/180*Pi);
+	Direction.Y = (PosX-Canvas.ClipX/2)/(Canvas.ClipX/2);
+	Direction.Z = (PosY-Canvas.ClipY/2)/(Canvas.ClipY/2);
+	Direction = Normal(Direction);
+	StartTrace = PO.Location+PO.EyeHeight*vect(0,0,1);
+	EndTrace = StartTrace+(Direction>>PO.ViewRotation)*10000.0;
+	Other = Trace(HitLocation,HitNormal,EndTrace,StartTrace,True);
+	return Other;
+}
+
+// UTLadder is actually Arial
+static function Font Arial( int Size )
+{
+	if ( Size < 12 )
+		return Font(DynamicLoadObject("LadderFonts.UTLadder10",
+			Class'Font'));
+	else if ( Size < 14 )
+		return Font(DynamicLoadObject("LadderFonts.UTLadder12",
+			Class'Font'));
+	else if ( Size < 16 )
+		return Font(DynamicLoadObject("LadderFonts.UTLadder14",
+			Class'Font'));
+	else if ( Size < 18 )
+		return Font(DynamicLoadObject("LadderFonts.UTLadder16",
+			Class'Font'));
+	else if ( Size < 20 )
+		return Font(DynamicLoadObject("LadderFonts.UTLadder18",
+			Class'Font'));
+	else if ( Size < 22 )
+		return Font(DynamicLoadObject("LadderFonts.UTLadder20",
+			Class'Font'));
+	else if ( Size < 24 )
+		return Font(DynamicLoadObject("LadderFonts.UTLadder22",
+			Class'Font'));
+	else if ( Size < 30 )
+		return Font(DynamicLoadObject("LadderFonts.UTLadder24",
+			Class'Font'));
+	return Font(DynamicLoadObject("LadderFonts.UTLadder30",Class'Font'));
+}
+
+// Good ol' Tahoma, that classic Windows UI font
+static function Font Tahoma( int Size, optional bool Bold )
+{
+	if ( Bold )
+	{
+		if ( Size < 20 )
+			return Font(DynamicLoadObject("UWindowFonts.TahomaB10",
+				Class'Font'));
+		else if ( Size < 30 )
+			return Font(DynamicLoadObject("UWindowFonts.TahomaB20",
+				Class'Font'));
+		return Font(DynamicLoadObject("UWindowFonts.TahomaB30",
+			Class'Font'));
+	}
+	else
+	{
+		if ( Size < 20 )
+			return Font(DynamicLoadObject("UWindowFonts.Tahoma10",
+				Class'Font'));
+		else if ( Size < 30 )
+			return Font(DynamicLoadObject("UWindowFonts.Tahoma20",
+				Class'Font'));
+		return Font(DynamicLoadObject("UWindowFonts.Tahoma30",
+			Class'Font'));
+	}
 }
 
 event PostBeginPlay()
 {
-	MOTDFade = 1.0;
-	SetTimer(1.0,true);
+	MOTDTime = Level.TimeSeconds+6;
 	Super.PostBeginPlay();
 }
 
@@ -88,46 +186,237 @@ function SetupHUD( Canvas Canvas )
 		&& PlayerOwner.ViewTarget.IsA('Pawn') )
 		PO = Pawn(PlayerOwner.ViewTarget);
 	else
-		PO = PlayerOwner;
+		PO = Pawn(Owner);
 	Canvas.Reset();
 	Canvas.SpaceX = 0;
 	Canvas.bNoSmooth = True;
-	Canvas.Font = Font'Engine.SmallFont';
+	Canvas.Font = Tahoma(10);
 	Canvas.Style = ERenderStyle.STY_Translucent;
 	Canvas.DrawColor = WhiteColor;
 }
 
-// Targeter special visuals (eg: mesh overlays)
-function DrawTargetSpecial( Canvas Canvas )
+// Message header
+function bool MsgHeader( Canvas Canvas, int i, float Pos )
 {
+	local float XL, YL;
+	local String PN, Str;
+	if ( (EventMessages[i].Type != 'Say')
+		&& (EventMessages[i].Type != 'TeamSay') )
+		return false;
+	if ( EventMessages[i].PRI != None )
+		PN = EventMessages[i].PRI.PlayerName;
+	else
+		PN = "???";
+	Canvas.DrawColor = WhiteColor*0.3;
+	Canvas.SetPos(4,Pos);
+	Str = PN;
+	if ( EventMessages[i].PRI.PlayerLocation != None )
+		Str = Str$"("$EventMessages[i].PRI.PlayerLocation
+			.LocationName$")";
+	else if ( (EventMessages[i].PRI.PlayerZone != None)
+		&& (EventMessages[i].PRI.PlayerZone.ZoneName != "") )
+		Str = Str$"("$EventMessages[i].PRI.PlayerZone.ZoneName$")";
+	Str = Str$": ";
+	Canvas.StrLen(Str,XL,YL);
+	Canvas.DrawText(Str);
+	Canvas.SetPos(4+XL,Pos);
+	Canvas.DrawColor = WhiteColor*0.5;
+	Canvas.DrawColor.R *= 0.5;
+	Canvas.DrawColor.B *= 0.5;
+	return true;
 }
 
 // Handle events, pickups and criticals
 function DrawSmallMessages( Canvas Canvas )
 {
+	local int i;
+	local float XL, YL, Col, Pos;
+	if ( CurrentPickup.LifeTime > Level.TimeSeconds )
+	{
+		Canvas.bCenter = True;
+		Canvas.Font = Arial(18);
+		Col = 60.0*(CurrentPickup.LifeTime-Level.TimeSeconds);
+		Canvas.DrawColor.R = Col*0.25;
+		Canvas.DrawColor.G = Col*0.5;
+		Canvas.DrawColor.B = Col;
+		Canvas.SetPos(0,Canvas.ClipY*0.85);
+		Canvas.DrawText(CurrentPickup.Message,True);
+		Canvas.bCenter = False;
+	}
+	if ( CriticalMessage.LifeTime > Level.TimeSeconds )
+	{
+		Canvas.bCenter = True;
+		Canvas.Font = Arial(20);
+		Col = 60.0*(CriticalMessage.LifeTime-Level.TimeSeconds);
+		Canvas.DrawColor.R = Col;
+		Canvas.DrawColor.G = Col*0.25;
+		Canvas.DrawColor.B = 0;
+		Canvas.SetPos(0,Canvas.ClipY*0.65);
+		Canvas.DrawText(CriticalMessage.Message,True);
+		Canvas.bCenter = False;
+	}
+	Canvas.Font = Tahoma(10);
+	Canvas.StrLen("M",XL,YL);
+	Canvas.SetPos(0,0);
+	Canvas.DrawColor = WhiteColor;
+	Pos = 4;
+	for ( i=3; i>=0; i-- )
+	{
+		if ( (EventMessages[i].Message == "")
+			|| (EventMessages[i].LifeTime < Level.TimeSeconds) )
+			continue;
+		if ( !MsgHeader(Canvas,i,Pos) )
+		{
+			if ( EventMessages[i].Type == 'DeathMessage' )
+			{
+				Canvas.DrawColor = WhiteColor*0.6;
+				Canvas.DrawColor.G *= 0.5;
+				Canvas.DrawColor.B *= 0.5;
+			}
+			else
+				Canvas.DrawColor = WhiteColor*0.8;
+			Canvas.SetPos(4,Pos);
+		}
+		Canvas.DrawText(EventMessages[i].Message);
+		Pos += YL;
+	}
+	Canvas.bNoSmooth = True;
 }
 
 // Console prompt
 function DrawPrompt( Canvas Canvas, Console Console )
 {
+	local float XL, YL;
+	local String Username, CWD;
+	Canvas.DrawColor = WhiteColor;
+	Canvas.Style = ERenderStyle.STY_Modulated;
+	Canvas.SetPos(0,Canvas.ClipY-32);
+	Canvas.bNoSmooth = False;
+	Canvas.DrawTile(Texture'Gradient270',Canvas.ClipX,32,0,128,1,128);
+	Canvas.bNoSmooth = True;
+	Username = PlayerOwner.PlayerReplicationInfo.PlayerName;
+	CWD = "/"$Left(Level.GetLocalURL(),InStr(Level.GetLocalURL(),".unr"));
+	Canvas.Font = Font'Engine.SmallFont';
+	Canvas.StrLen("M",XL,YL);
+	Canvas.Style = ERenderStyle.STY_Translucent;
+	Canvas.DrawColor.R = 16;
+	Canvas.DrawColor.G = 96;
+	Canvas.DrawColor.B = 16;
+	Canvas.SetPos(2,Canvas.ClipY-(YL+2));
+	Canvas.DrawText(Username);
+	Canvas.DrawColor.R = 32;
+	Canvas.DrawColor.G = 192;
+	Canvas.DrawColor.B = 32;
+	Canvas.SetPos(2+XL*(Len(Username)+1),Canvas.ClipY-(YL+2));
+	Canvas.DrawText(CWD);
+	Canvas.DrawColor.R = 64;
+	Canvas.DrawColor.G = 128;
+	Canvas.DrawColor.B = 64;
+	Canvas.SetPos(2+XL*(Len(Username)+Len(CWD)+2),Canvas.ClipY-(YL+2));
+	Canvas.DrawText("%");
+	Canvas.DrawColor.R = 128;
+	Canvas.DrawColor.G = 192;
+	Canvas.DrawColor.B = 128;
+	Canvas.SetPos(2+XL*(Len(Username)+Len(CWD)+4),Canvas.ClipY-(YL+2));
+	Canvas.DrawText(Console.TypedStr$"_");
 }
 
 // Localized messages
 function DrawLocalizedMessages( Canvas Canvas )
 {
+	local int i;
+	local float FadeFactor;
+	for ( i=0; i<10; i++ )
+	{
+		if ( LocalMessages[i].Message == None )
+			continue;
+		Canvas.Font = LocalMessages[i].StringFont;
+		Canvas.DrawColor = LocalMessages[i].DrawColor;
+		if ( LocalMessages[i].Message.Default.bFadeMessage )
+		{
+			FadeFactor = LocalMessages[i].EndOfLife
+				-Level.TimeSeconds;
+			Canvas.DrawColor.R *= (FadeFactor/LocalMessages[i]
+				.LifeTime);
+			Canvas.DrawColor.G *= (FadeFactor/LocalMessages[i]
+				.LifeTime);
+			Canvas.DrawColor.B *= (FadeFactor/LocalMessages[i]
+				.LifeTime);
+		}
+		Canvas.SetPos(0.5*(Canvas.ClipX-LocalMessages[i].XL),
+			LocalMessages[i].YPos);
+		Canvas.DrawText(LocalMessages[i].StringMessage);
+	}
 }
 
-// Progress (?)
+// Progress (Game progress messages, such as "the match has begun")
 function DrawProgress( Canvas Canvas )
 {
+	local int i;
+	local float XL, YL, Pos;
+	PlayerOwner.ProgressTimeOut = FMin(PlayerOwner.ProgressTimeOut,
+		Level.TimeSeconds+8);
+	Canvas.Font = Arial(20);
+	Canvas.StrLen("M",XL,YL);
+	Pos = -4*YL;
+	Canvas.bCenter = True;
+	for ( i=0; i<8; i++ )
+	{
+		Canvas.SetPos(0,Canvas.ClipY*0.5+Pos);
+		Canvas.DrawColor = PlayerOwner.ProgressColor[i];
+		Canvas.DrawText(PlayerOwner.ProgressMessage[i]);
+		Pos += YL;
+	}
+	Canvas.bCenter = False;
 }
 
 // MOTD and Map Info
 function DrawMOTD( Canvas Canvas )
 {
+	local GameReplicationInfo GRI;
+	local float XL, YL, Pos;
+	GRI = PlayerOwner.GameReplicationInfo;
+	if ( GRI == None )
+		return;
+	Canvas.bCenter = True;
+	Canvas.Font = Tahoma(10);
+	Canvas.StrLen("M",XL,YL);
+	Canvas.DrawColor = WhiteColor*((MOTDTime-Level.TimeSeconds)/10.0);
+	Canvas.SetPos(0,Canvas.ClipY*0.1+Pos);
+	Canvas.DrawText("Game Type:"@GRI.GameName,True);
+	Pos += YL;
+	Canvas.SetPos(0,Canvas.ClipY*0.1+Pos);
+	Canvas.DrawText("Map Title:"@Level.Title,True);
+	Pos += YL;
+	Canvas.SetPos(0,Canvas.ClipY*0.1+Pos);
+	Canvas.DrawText("Author:"@Level.Author,True);
+	Pos += YL;
+	Canvas.SetPos(0,Canvas.ClipY*0.1+Pos);
+	if ( Level.IdealPlayerCount != "" )
+		Canvas.DrawText("Ideal Player Load:"@Level.IdealPlayerCount,
+			True);
+	Pos += 2*YL;
+	Canvas.SetPos(0,Canvas.ClipY*0.1+Pos);
+	Canvas.DrawColor.R = 0;
+	Canvas.DrawColor.G /= 2;
+	Canvas.DrawText(Level.LevelEnterText,True);
+	Pos += 2*YL;
+	Canvas.SetPos(0,Canvas.ClipY*0.1+Pos);
+	Canvas.DrawText(GRI.MOTDLine1,True);
+	Pos += YL;
+	Canvas.SetPos(0,Canvas.ClipY*0.1+Pos);
+	Canvas.DrawText(GRI.MOTDLine2,True);
+	Pos += YL;
+	Canvas.SetPos(0,Canvas.ClipY*0.1+Pos);
+	Canvas.DrawText(GRI.MOTDLine3,True);
+	Pos += YL;
+	Canvas.SetPos(0,Canvas.ClipY*0.1+Pos);
+	Canvas.DrawText(GRI.MOTDLine4,True);
+	Pos += YL;
+	Canvas.bCenter = False;
 }
 
-// Player Health, Armor, Powerups...
+// Player Health, Armor, Powerups... (and Score)
 function DrawPlayerStatus( Canvas Canvas )
 {
 }
@@ -137,24 +426,145 @@ function DrawInventory( Canvas Canvas )
 {
 }
 
-// Score counter (usually frags)
-function DrawScoring( Canvas Canvas )
+// Deathmatch synopsis
+function DrawDMSynopsis( Canvas Canvas )
+{
+	local int i, j, m, n;
+	local float XL, YL, Pos;
+	local Pawn P;
+	local PlayerReplicationInfo temp;
+	// Populate list
+	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
+	{
+		if ( P.PlayerReplicationInfo == None )
+			continue;
+		Ranks[i] = P.PlayerReplicationInfo;
+		i++;
+	}
+	n = i;
+	// Sort list
+	for ( i=0; i<n-1; i++ )
+	{
+		m = i;
+		for ( j=i+1; j<n; j++ )
+			if ( (Ranks[j].Score > Ranks[m].Score)
+				|| ((Ranks[j].Score == Ranks[m].Score)
+				&& (Ranks[j].Deaths < Ranks[m].Deaths))
+				|| ((Ranks[j].Score == Ranks[m].Score)
+				&& (Ranks[j].Deaths == Ranks[m].Deaths)
+				&& (Ranks[j].PlayerID < Ranks[m].PlayerID)) )
+				m = j;
+		temp = Ranks[m];
+		Ranks[m] = Ranks[i];
+		Ranks[i] = temp;
+	}
+	Canvas.Font = Arial(16);
+	Canvas.StrLen("M",XL,YL);
+	Canvas.DrawColor = WhiteColor;
+	Canvas.Style = ERenderStyle.STY_Modulated;
+	Canvas.bNoSmooth = False;
+	Canvas.SetPos(0,0.5*Canvas.ClipY-YL*1.5);
+	Canvas.DrawTile(Texture'Gradient0',Canvas.ClipX*0.25,YL*5,0,0,128,1);
+	Canvas.bNoSmooth = True;
+	Canvas.Style = ERenderStyle.STY_Translucent;
+	Pos = -YL*1.5;
+	for ( i=0; i<3; i++ )
+	{
+		// End of the line
+		if ( Ranks[i] == None )
+			return;
+		Pos += YL;
+		Canvas.DrawColor.R = 192-48*i;
+		Canvas.DrawColor.G = 0;
+		Canvas.DrawColor.B = 0;
+		Canvas.SetPos(XL,0.5*Canvas.ClipY+Pos);
+		Canvas.DrawText(Ranks[i].PlayerName@"("$int(Ranks[i].Score)
+			$")");
+	}
+}
+
+// TDM synopsis
+function DrawTDMSynopsis( Canvas Canvas )
 {
 }
 
-// Special gametype-specific info
-function DrawGameSpecial( Canvas Canvas )
+// Capture the Flag synopsis
+function DrawCTFSynopsis( Canvas Canvas )
+{
+}
+
+// Domination synopsis
+function DrawDOMSynopsis( Canvas Canvas )
+{
+}
+
+// Assault synopsis (lol ASS)
+function DrawASSynopsis( Canvas Canvas )
 {
 }
 
 // Gametype synopsis
 function DrawSynopsis( Canvas Canvas )
 {
+	if ( HUDType == HUD_Deathmatch )
+		DrawDMSynopsis(Canvas);
+	else if ( HUDType == HUD_TeamDeathmatch )
+		DrawTDMSynopsis(Canvas);
+	else if ( HUDType == HUD_CaptureTheFlag )
+		DrawCTFSynopsis(Canvas);
+	else if ( HUDType == HUD_Domination )
+		DrawDOMSynopsis(Canvas);
+	else if ( HUDType == HUD_Assault )
+		DrawASSynopsis(Canvas);
 }
 
 // Targeter visuals
 function DrawTargetInfo( Canvas Canvas )
 {
+	local float XL, YL;
+	local Pawn P;
+	local PlayerReplicationInfo PRI;
+	local Vector Position;
+	Canvas.Font = Tahoma(10,True);
+	for ( P=Level.PawnList; P!=None; P=P.NextPawn )
+	{
+		if ( P.PlayerReplicationInfo == None )
+			continue;
+		if ( !WorldToScreen(Canvas,P.Location+P.CollisionHeight
+			*vect(0,0,1),Position) )
+			continue;
+		PRI = P.PlayerReplicationInfo;
+		Canvas.DrawColor = WhiteColor;
+		Canvas.StrLen(PRI.PlayerName,XL,YL);
+		Canvas.SetPos(Position.X-0.5*XL,Position.Y-(YL+16));
+		Canvas.DrawText(PRI.PlayerName);
+		Canvas.SetPos(Position.X-64,Position.Y-16);
+		Canvas.Style = ERenderStyle.STY_Modulated;
+		Canvas.DrawTile(Texture'Gradient0',128,2,64,1,1,1);
+		Canvas.Style = ERenderStyle.STY_Translucent;
+		Canvas.DrawColor.R = 128;
+		Canvas.DrawColor.G = 0;
+		Canvas.DrawColor.B = 0;
+		Canvas.SetPos(Position.X-64,Position.Y-16);
+		Canvas.DrawTile(Texture'Whiteness',1.28*Clamp(P.Health,0,100),
+			2,1,1,1,1);
+		Canvas.DrawColor.G = 128;
+		Canvas.SetPos(Position.X-64,Position.Y-16);
+		Canvas.DrawTile(Texture'Whiteness',1.28*Clamp(P.Health-100,0,
+			100),2,1,1,1,1);
+		Canvas.DrawColor.R = 0;
+		Canvas.SetPos(Position.X-64,Position.Y-16);
+		Canvas.DrawTile(Texture'Whiteness',0.16*Clamp(P.Health-200,0,
+			1000),2,1,1,1,1);
+		Canvas.DrawColor.B = 128;
+		Canvas.SetPos(Position.X-64,Position.Y-16);
+		Canvas.DrawTile(Texture'Whiteness',0.128*Clamp(P.Health-1000,0,
+			2000),2,1,1,1,1);
+		Canvas.DrawColor.G = 0;
+		Canvas.SetPos(Position.X-64,Position.Y-16);
+		Canvas.DrawTile(Texture'Whiteness',0.427*Clamp(P.Health-2000,0,
+			5000),2,1,1,1,1);
+	}
 }
 
 // Master HUD drawing function
@@ -163,6 +573,10 @@ event PostRender( Canvas Canvas )
 	SetupHUD(Canvas);
 	if ( (PO == None) || (PO.PlayerReplicationInfo == None) )
 		return;
+	// Weapon Post-render (usually crosshair is rendered here, but fuck
+	// crosshairs, who needs them)
+	if ( !PlayerOwner.bBehindView && (PO.Weapon != None) )
+		PO.Weapon.PostRender(Canvas);
 	if ( ShowInfo )
 	{
 		if ( ServerInfo == None )
@@ -170,8 +584,6 @@ event PostRender( Canvas Canvas )
 		ServerInfo.RenderInfo(Canvas);
 		return;
 	}
-	// Targeting Specials
-	DrawTargetSpecial(Canvas);
 	// Lesser messages
 	DrawSmallMessages(Canvas);
 	// Scores
@@ -192,24 +604,16 @@ event PostRender( Canvas Canvas )
 	}
 	// Localized message loop
 	DrawLocalizedMessages(Canvas);
-	// Weapon Post-render (usually crosshair is rendered here, but fuck
-	// crosshairs, who needs them)
-	if ( !PlayerOwner.bBehindView && (PO.Weapon != None) )
-		PO.Weapon.PostRender(Canvas);
 	// Progress
 	if ( PlayerOwner.ProgressTimeOut > Level.TimeSeconds )
 		DrawProgress(Canvas);
 	// MOTD, Map Info...
-	if ( MOTDFade > 0.0 )
+	if ( MOTDTime > Level.TimeSeconds )
 		DrawMOTD(Canvas);
 	// Player Status
 	DrawPlayerStatus(Canvas);
 	// Inventory Info
 	DrawInventory(Canvas);
-	// Scoring
-	DrawScoring(Canvas);
-	// Gamemode specials
-	DrawGameSpecial(Canvas);
 	// Synopsis
 	DrawSynopsis(Canvas);
 	// Targeting Info
@@ -334,12 +738,12 @@ function Message( PlayerReplicationInfo PRI, coerce string Msg, Name N )
 		N = 'Pickup';
 	if ( N == 'Pickup' )
 	{
-		CurrentPickup.LifeTime = 6+Level.TimeSeconds;
+		CurrentPickup.LifeTime = 3+Level.TimeSeconds;
 		CurrentPickup.Message = Msg;
 	}
 	else if ( N == 'CriticalEvent' )
 	{
-		CriticalMessage.LifeTime = 6+Level.TimeSeconds;
+		CriticalMessage.LifeTime = 3+Level.TimeSeconds;
 		CriticalMessage.Message = Msg;
 	}
 	else
@@ -353,7 +757,7 @@ function Message( PlayerReplicationInfo PRI, coerce string Msg, Name N )
 		EventMessages[0].Type = N;
 		EventMessages[0].Message = Msg;
 		EventMessages[0].PRI = PRI;
-		EventMessages[0].LifeTime = 6+Level.TimeSeconds;
+		EventMessages[0].LifeTime = 5+Level.TimeSeconds;
 	}
 }
 

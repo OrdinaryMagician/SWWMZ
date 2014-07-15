@@ -27,6 +27,7 @@ Alpha:
     X MChip
     F MParticle
     C MHUD
+    X MDamageCounter
   - Weapons
     - Unlimited Chainsaw Works
       - Throwable chainsaw
@@ -136,7 +137,36 @@ Beta:
     - Have bots learn how to use air push
     - Teach bots proper gravity gun usage (this will be hard)
     - Teach bots how to play with the happy fun ball (oh dear)
-    - Teach bots about rocket jumping
+  - Weapon upgrades
+    - Unlimited Chainsaw Works
+    - Deep Impact Hammer
+    - Zapper
+    - Explodium Gun
+    - Spreadgun
+    - Enhanced Biorifle
+    - Napalm Gun
+    - Legacy Sparkster
+    - Modern Sparkster
+    - PROWEL
+    - Revenge of the Miniclone Machine
+    - Gravity Gun
+    - Betapulse
+    - Splatter
+    - Eviscerator
+    - Spamgun
+    - Neutralizer
+    - Chaos Cannon
+    - Fire Cannon
+    - Hellraiser
+    - Quadshot
+    - Mortal Rifle
+    - Silver Bullet
+    - Messup Machine
+    - Mortal Cannon Artifact
+    - Candy Gun
+    - Ynykron Artifact
+    - Super Happy Fun Ball
+  - HUD extensions
   - Probably more weapons and pickups (?)
 Gold:
   - Netcode, maybe?

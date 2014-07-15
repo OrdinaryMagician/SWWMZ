@@ -3,6 +3,20 @@
 The arsenal in SWWMZ is composed entirely of silly overpowered weapons.
 Each slot usually has at least two weapons.
 
+SWWMZ has some special weapon mechanics one must familiarize themselves with:
+* Durability: Weapons can degrade by taking damage or being used, when on the
+  verge of breaking, you'll be alerted. Since this game has no bonfires or
+  blacksmiths, healing items double as this mod's "repair powder" (Yes, I am
+  aware UT is not Dark Souls).
+* Inertia: Because how in the heck could you aim straight while moving, weapons
+  have extra force applied to them while you're moving, shooting or getting
+  hit.
+* Weighting: Currently equiped weapons may affect mobility depending on their
+  size (this does not count carried weapons, since those are just in
+  hammerspace).
+* Recoil: Remember, you are using absurdly overkill firepower here, so you can,
+  for example, get kicked back into a bottomless pit after shooting.
+
 #### Unlimited Chainsaw Works, replaces Chainsaw
 
 Ever wanted to throw a chainsaw at someone? Well now you can!

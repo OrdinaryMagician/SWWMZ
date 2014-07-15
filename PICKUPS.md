@@ -2,6 +2,13 @@
 
 Of course some powerups are needed, too.
 
+Healing items restore health (duh) to you and all carried weapons.
+
+Armor is separated in groups for each type of item, there are three types of
+armor items in the mod, each with its own special effects.
+
+Powerups all have a fixed time limit, after which they'll simply wear out.
+
 #### Health Bonus, replaces Health Vial
 
 Health bonuses increase health by 5% up to a 2000% cap.
@@ -13,7 +20,8 @@ Health cubes provide a 100% health boost up to a cap of 1000%.
 #### Refresher, replaces Big Keg O' Health
 
 This artifact provides a massive boost of health to 5000%, plus a regeneration
-effect that heals 10% every 5 seconds, for up to 60 seconds.
+effect that heals 10% every 5 seconds, for up to 60 seconds, thus it doubles
+as a powerup.
 
 #### Armor Bonus, replaces Health Vial
 

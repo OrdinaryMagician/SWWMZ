@@ -24,8 +24,10 @@ Nothing here yet.
 
 A quick and dirty minimap. Marks players as cyan-ish dots on teamless games, or
 as their team color on team ones. Points of interest show up as little stars,
-red for weapons, green for powerups, yellow for SUPERweapons. On some gametypes
-you'll also see the locations of control points, flags, or assault targets.
+green for powerups, yellow for SUPERweapons.
+On some gametypes you'll also see the locations of control points, flags, or
+assault targets (including remote triggers in a lighter color, if any).
+Placement of assault targets might be off, but that depends on the map author.
 There is no actual "map", so I guess this is more like a radar.
 
 #### Left border
@@ -51,7 +53,7 @@ Team scores and their currently dominated control points.
 
 ##### Assault
 
-Your current objective(s).
+Nothing shows up here.
 
 ##### Last Man Standing
 

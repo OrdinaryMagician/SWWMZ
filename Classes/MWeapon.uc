@@ -130,6 +130,26 @@ static final operator(34) fRotator += ( out fRotator A, fRotator B )
 event TakeDamage( int Damage, Pawn InstigatedBy, Vector HitLocation,
 	Vector Momentum, Name DamageType )
 {
+	local MDamageCounter DC;
+	if ( HitBox != None )
+	{
+		DC = Spawn(Class'MDamageCounter',HitBox);
+		DC.Factor = -Damage;
+		if ( HitLocation == vect(0,0,0) )
+			DC.RealHitLocation = HitBox.Location;
+		else
+			DC.RealHitLocation = HitLocation-HitBox.Location;
+	}
+	else
+	{
+		DC = Spawn(Class'MDamageCounter',self);
+		DC.Factor = -Damage;
+		if ( HitLocation == vect(0,0,0) )
+			DC.RealHitLocation = Location;
+		else
+			DC.RealHitLocation = HitLocation-Location;
+	}
+	if ( HitLocation == vect(0,0,0) )
 	Health -= Damage;
 	ForExt += Momentum;
 	PlaySound(HitSound[Rand(3)],SLOT_Interact,1.5,,,0.8+FRand()*0.4);
@@ -147,6 +167,8 @@ Auto State Pickup
 	function BeginState()
 	{
 		Super.BeginState();
+		if ( IsSuperWeapon )
+			bWeaponStay = False; // Always
 		SetPickupSkins();
 	}
 

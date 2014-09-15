@@ -3,8 +3,8 @@
 One of the newest features in this project is a full HUD replacement.
 
 Since this HUD is designed specifically for SWWM Z, it can't handle other
-custom content well. Support for popular custom gametypes like Multi-CTF or
-Monster Hunt might be added someday.
+custom content well. There's support for some custom gametypes like Multi-CTF
+or Monster Hunt.
 
 The HUD has been designed specifically for minimal screen clutter, thus it is
 mostly just text and little colored bars.
@@ -23,8 +23,7 @@ Nothing here yet.
 #### Top right corner
 
 A quick and dirty minimap. Marks players as cyan-ish dots on teamless games, or
-as their team color on team ones. Points of interest show up as little stars,
-green for powerups, yellow for SUPERweapons.
+as their team color on team ones.
 On some gametypes you'll also see the locations of control points, flags, or
 assault targets (including remote triggers in a lighter color, if any).
 Placement of assault targets might be off, but that depends on the map author.
@@ -58,6 +57,12 @@ Nothing shows up here.
 ##### Last Man Standing
 
 The top three players and their remaining lives, also your own lives.
+
+##### Various mods
+
+Currently supported custom gametypes are Monster Hunt (shows nothing),
+Oldskool Amp'd (shows usable inventory items), MultiCTF (behaves the same
+exact way as normal CTF) and Apprehension (shows team scores).
 
 #### Right border
 
@@ -99,9 +104,6 @@ smoke clouds, a targeter has been implemented, the following things are shown:
   number (either negative or positive) will show up below the health bar
   indicating the cumulative increase/decrease in health. The targeter only
   picks up creatures in your direct line of sight, unless they are teammates.
-* Items: Every single thing that can be picked up will show up onscreen as a
-  label and some stats depending on the type of item. Only visible items are
-  targeted, unless they are powerups or superweapons.
 * Gametype specials: These always show up. Things such as flags, control points
-  or assault objectives. They all come with a little distance meter (in meters,
-  fuck you imperial system).
+  assault objectives, or mod-specific stuff. They all come with a little
+  distance meter (in meters, fuck you imperial system).

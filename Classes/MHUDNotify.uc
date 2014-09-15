@@ -15,7 +15,8 @@ event Actor SpawnNotification( Actor A )
 		N.HUDType = HUD_Assault;
 		return N;
 	}
-	if ( A.Class.Name == 'ChallengeCTFHUD' )
+	if ( (A.Class.Name == 'ChallengeCTFHUD')
+		|| (A.Class.Name == 'MultiCTFHUD') )
 	{
 		A.Destroy();
 		N = Spawn(Class'SWWMZ.MHUD',A.Owner);
@@ -41,6 +42,20 @@ event Actor SpawnNotification( Actor A )
 		A.Destroy();
 		N = Spawn(Class'SWWMZ.MHUD',A.Owner);
 		N.HUDType = HUD_Deathmatch;
+		return N;
+	}
+	if ( (A.Class.Name == 'MonsterHUD') || (A.Class.Name == 'KHMHUD') )
+	{
+		A.Destroy();
+		N = Spawn(Class'SWWMZ.MHUD',A.Owner);
+		N.HUDType = HUD_MonsterHunt;
+		return N;
+	}
+	if ( A.Class.Name == 'AppHUD' )
+	{
+		A.Destroy();
+		N = Spawn(Class'SWWMZ.MHUD',A.Owner);
+		N.HUDType = HUD_Apprehension;
 		return N;
 	}
 	// Nothing to change

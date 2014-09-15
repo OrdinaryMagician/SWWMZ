@@ -98,3 +98,23 @@ class MResources extends Actor abstract;
 #exec TEXTURE IMPORT NAME=NGradient135 FILE=Textures\ngradient135.pcx
 #exec TEXTURE IMPORT NAME=NGradient225 FILE=Textures\ngradient225.pcx
 #exec TEXTURE IMPORT NAME=NGradient315 FILE=Textures\ngradient315.pcx
+
+#exec TEXTURE IMPORT FILE=Textures\mh_dot.pcx NAME=mh_dot
+#exec TEXTURE IMPORT FILE=Textures\mh_star.pcx NAME=mh_star
+#exec TEXTURE IMPORT FILE=Textures\mh_flag.pcx NAME=mh_flag
+#exec TEXTURE IMPORT FILE=Textures\mh_flagtk.pcx NAME=mh_flagtk
+#exec TEXTURE IMPORT FILE=Textures\mh_flagdp.pcx NAME=mh_flagdp
+#exec TEXTURE IMPORT FILE=Textures\mh_neutral.pcx NAME=mh_neutral
+#exec TEXTURE IMPORT FILE=Textures\mh_red.pcx NAME=mh_red
+#exec TEXTURE IMPORT FILE=Textures\mh_blue.pcx NAME=mh_blue
+#exec TEXTURE IMPORT FILE=Textures\mh_green.pcx NAME=mh_green
+#exec TEXTURE IMPORT FILE=Textures\mh_gold.pcx NAME=mh_gold
+
+#exec TEXTURE IMPORT FILE=Textures\mh_boots.pcx NAME=mh_boots
+#exec TEXTURE IMPORT FILE=Textures\mh_invis.pcx NAME=mh_invis
+#exec TEXTURE IMPORT FILE=Textures\mh_shield.pcx NAME=mh_shield
+#exec TEXTURE IMPORT FILE=Textures\mh_regen.pcx NAME=mh_regen
+#exec TEXTURE IMPORT FILE=Textures\mh_reflect.pcx NAME=mh_reflect
+#exec TEXTURE IMPORT FILE=Textures\mh_hide.pcx NAME=mh_hide
+#exec TEXTURE IMPORT FILE=Textures\mh_rage.pcx NAME=mh_rage
+#exec TEXTURE IMPORT FILE=Textures\mh_float.pcx NAME=mh_float

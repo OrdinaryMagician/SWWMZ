@@ -44,7 +44,6 @@ Decent armor, protects very well against all damage. Reduction factors are as
 follows:
  * 100% reduction for elemental (fire, ice, electric, etc.)
  * 80% reduction for splash damage from explosives
- * 60% reduction to momentum from any damage
  * 50% reduction to damage from bullets
  * 40% reduction to everything else
 
@@ -58,7 +57,7 @@ campaign.
 
 All attacks are deflected, both hitscan and normal projectiles this time.
 
-The deflector runs out after 3 minutes or a total of 5000 damage blocked,
+The deflector runs out after 3 minutes or a total of 5000 deflections,
 whichever happens first.
 
 #### Ghost Artifact, replaces Invisibility

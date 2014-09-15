@@ -40,14 +40,10 @@ function float ArmorDesireability( Pawn Bot, MArmor A )
 	return FMin(0.02*(ArmorMax-Current),2.0);
 }
 
-function int ArmorAbsorbDamage( int Damage, Name DamageType,
+function int Reduce( int Damage, Name DamageType,
 	Vector HitLocation )
 {
-	return 0;
-}
-
-function ArmorImpactEffect( Vector HitLocation )
-{
+	return Damage;
 }
 
 Auto State Pickup
@@ -95,5 +91,4 @@ Auto State Pickup
 
 defaultproperties
 {
-	bIsAnArmor=True
 }

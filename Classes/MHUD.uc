@@ -8,17 +8,6 @@
 //=============================================================================
 class MHUD extends HUD;
 
-#exec TEXTURE IMPORT FILE=Textures\mh_dot.pcx NAME=mh_dot
-#exec TEXTURE IMPORT FILE=Textures\mh_star.pcx NAME=mh_star
-#exec TEXTURE IMPORT FILE=Textures\mh_flag.pcx NAME=mh_flag
-#exec TEXTURE IMPORT FILE=Textures\mh_flagtk.pcx NAME=mh_flagtk
-#exec TEXTURE IMPORT FILE=Textures\mh_flagdp.pcx NAME=mh_flagdp
-#exec TEXTURE IMPORT FILE=Textures\mh_neutral.pcx NAME=mh_neutral
-#exec TEXTURE IMPORT FILE=Textures\mh_red.pcx NAME=mh_red
-#exec TEXTURE IMPORT FILE=Textures\mh_blue.pcx NAME=mh_blue
-#exec TEXTURE IMPORT FILE=Textures\mh_green.pcx NAME=mh_green
-#exec TEXTURE IMPORT FILE=Textures\mh_gold.pcx NAME=mh_gold
-
 // Screen size tiers
 enum EScreenSize
 {
@@ -43,6 +32,9 @@ enum EHUDType
 	HUD_CaptureTheFlag,
 	HUD_Assault,
 	HUD_LastManStanding,
+	HUD_MonsterHunt,
+	HUD_Apprehension,
+	HUD_Singleplayer
 };
 var EHUDType HUDType;
 
@@ -77,8 +69,8 @@ var PlayerReplicationInfo Ranks[32];
 var byte RanksTeam[4];
 
 // Teamstuff
-var() Color TeamColor[4];
-var() Texture TeamIcon[4];
+var() Color TeamColor[5];
+var() Texture TeamIcon[5];
 
 // String table
 var() localized string GameString;
@@ -86,7 +78,7 @@ var() localized string TitleString;
 var() localized string AuthorString;
 var() localized string LoadString;
 var() localized string ASFallbackName;
-var() localized string FlagName[4];
+var() localized string FlagName[5];
 
 // Projection utils (thank you Wormbo)
 function bool MapToHUD( out Vector Res, Rotator ViewRotation, float FOV,
@@ -239,6 +231,11 @@ event Timer()
 		CopyMessage(LocalMessages[i],LocalMessages[i+1]);
 		ClearMessage(LocalMessages[i+1]);
 	}
+	// Clean up other messages
+	if ( CurrentPickup.LifeTime < Level.TimeSeconds )
+		ClearSmallMessage(CurrentPickup);
+	if ( CriticalMessage.LifeTime < Level.TimeSeconds )
+		ClearSmallMessage(CriticalMessage);
 }
 
 event PostBeginPlay()
@@ -575,16 +572,331 @@ function DrawMOTD( Canvas Canvas )
 	Canvas.bCenter = False;
 }
 
-// Player Health, Armor, Powerups... (and Score)
+function Texture GetPowerupIcon( Inventory I )
+{
+	if ( I.IsA('UT_JumpBoots') )
+		return Texture'mh_boots';
+	if ( I.IsA('UT_Invisibility') )
+		return Texture'mh_invis';
+	if ( I.IsA('UT_ShieldBelt') )
+		return Texture'mh_shield';
+	if ( I.IsA('UDamage') )
+		return Texture'mh_green';
+	if ( I.IsA('MRegen') )
+		return Texture'mh_regen';
+	if ( I.IsA('MReflector') )
+		return Texture'mh_reflect';
+	if ( I.IsA('MGhost') )
+		return Texture'mh_hide';
+	if ( I.IsA('MRagekit') )
+		return Texture'mh_rage';
+	if ( I.IsA('MFloat') )
+		return Texture'mh_float';
+	return Texture'Invisible';
+}
+
+// Player Health, Armor, Powerups...
 function DrawPlayerStatus( Canvas Canvas )
 {
-	// TODO
+	local Inventory Inv;
+	local Inventory Powerups[9];
+	local MArmor Armors[3], MA;
+	local int i, n, ta;
+	local float Pos, Step;
+	local PlayerReplicationInfo PRI;
+	PRI = PO.PlayerReplicationInfo;
+	if ( PRI == None )
+		return;
+	// Player stats on bottom left corner
+	Step = 16*ElementScale;
+	Pos = -Step*1.5;
+	Canvas.SetPos(16,Canvas.ClipY-16+Pos-6*ElementScale);
+	Canvas.Style = ERenderStyle.STY_Modulated;
+	Canvas.DrawTile(Texture'Gradient0',320*ElementScale,12*ElementScale,64,
+		1,1,1);
+	Canvas.Style = ERenderStyle.STY_Translucent;
+	Canvas.DrawColor.R = 128;
+	Canvas.DrawColor.G = 0;
+	Canvas.DrawColor.B = 0;
+	Canvas.SetPos(16,Canvas.ClipY-16+Pos-6*ElementScale);
+	Canvas.DrawTile(Texture'Whiteness',(320/PO.Default.Health)
+		*Clamp(PO.Health,0,PO.Default.Health)*ElementScale,12
+		*ElementScale,1,1,1,1);
+	Canvas.DrawColor.R = 0;
+	Canvas.DrawColor.G = 128;
+	Canvas.DrawColor.B = 0;
+	Canvas.SetPos(16,Canvas.ClipY-16+Pos-6*ElementScale);
+	Canvas.DrawTile(Texture'Whiteness',(320/4900)*Clamp(PO.Health-100,
+		0,4900)*ElementScale,12*ElementScale,1,1,1,1);
+	Pos += Step;
+	Canvas.SetPos(16,Canvas.ClipY-16+Pos-6*ElementScale);
+	Canvas.Style = ERenderStyle.STY_Modulated;
+	Canvas.DrawTile(Texture'Gradient0',320*ElementScale,12*ElementScale,64,
+		1,1,1);
+	Canvas.Style = ERenderStyle.STY_Translucent;
+	// Traditional armor values
+	Canvas.DrawColor = WhiteColor*0.25;
+	ForEach AllActors(Class'Inventory',Inv)
+	{
+		if ( (Inv.Owner != PO) || !Inv.bIsAnArmor )
+			continue;
+		ta = Min(ta+Inv.Charge,199);
+	}
+	Canvas.SetPos(16,Canvas.ClipY-16+Pos-6*ElementScale);
+	Canvas.DrawTile(Texture'Whiteness',(320/199)*ta*ElementScale,
+		12*ElementScale,1,1,1,1);
+	ForEach AllActors(Class'MArmor',MA)
+	{
+		if ( MA.Owner != PO )
+			continue;
+		if ( MA.IsA('MArmorBonus') )
+			Armors[0] = MA;
+		if ( MA.IsA('MBlastSuit') )
+			Armors[1] = MA;
+		if ( MA.IsA('MWarArmor') )
+			Armors[2] = MA;
+	}
+	Canvas.DrawColor.R = 0;
+	Canvas.DrawColor.G = 128;
+	Canvas.DrawColor.B = 0;
+	Canvas.SetPos(16,Canvas.ClipY-16+Pos-6*ElementScale);
+	Canvas.DrawTile(Texture'Whiteness',(320/Armors[0].ArmorMax)
+		*Armors[0].ArmorAmount*ElementScale,4*ElementScale,1,1,1,1);
+	Canvas.DrawColor.R = 128;
+	Canvas.DrawColor.G = 64;
+	Canvas.DrawColor.B = 0;
+	Canvas.SetPos(16,Canvas.ClipY-16+Pos-2*ElementScale);
+	Canvas.DrawTile(Texture'Whiteness',(320/Armors[1].ArmorMax)
+		*Armors[1].ArmorAmount*ElementScale,4*ElementScale,1,1,1,1);
+	Canvas.DrawColor.R = 64;
+	Canvas.DrawColor.G = 0;
+	Canvas.DrawColor.B = 128;
+	Canvas.SetPos(16,Canvas.ClipY-16+Pos+2*ElementScale);
+	Canvas.DrawTile(Texture'Whiteness',(320/Armors[2].ArmorMax)
+		*Armors[2].ArmorAmount*ElementScale,4*ElementScale,1,1,1,1);
+	// Powerup status on right border
+	ForEach AllActors(Class'Inventory',Inv)
+	{
+		if ( n >= 9 )
+			break;
+		if ( (Inv.Owner != PO) )
+			continue;
+		if ( Inv.IsA('UT_JumpBoots') || Inv.IsA('UT_Invisibility')
+			|| Inv.IsA('UT_ShieldBelt') || Inv.IsA('UDamage')
+			|| Inv.IsA('MRegen') || Inv.IsA('MReflector')
+			|| Inv.IsA('MGhost') || Inv.IsA('MRagekit')
+			|| Inv.IsA('MFloat') )
+		{
+			Powerups[n] = Inv;
+			n++;
+		}
+	}
+	Step = 48*ElementScale;
+	Pos = -Step*0.5*n+0.5*Step;
+	Canvas.DrawColor = WhiteColor;
+	for ( i=0; i<n; i++ )
+	{
+		Canvas.bNoSmooth = False;
+		Canvas.SetPos(Canvas.ClipX-0.5*Step-16*ElementScale,
+			0.5*Canvas.ClipY+Pos-16*ElementScale);
+		Canvas.DrawIcon(GetPowerupIcon(Powerups[i]),ElementScale/2.0);
+		Canvas.SetPos(Canvas.ClipX-0.5*Step-16*ElementScale,
+			0.5*Canvas.ClipY+Pos+0.5*Step-8*ElementScale);
+		Canvas.bNoSmooth = True;
+		Canvas.Style = ERenderStyle.STY_Modulated;
+		Canvas.DrawTile(Texture'Gradient0',32*ElementScale,
+			2*ElementScale,64,1,1,1);
+		Canvas.Style = ERenderStyle.STY_Translucent;
+		Canvas.SetPos(Canvas.ClipX-0.5*Step-16*ElementScale,
+			0.5*Canvas.ClipY+Pos+0.5*Step-8*ElementScale);
+		Canvas.DrawTile(Texture'Whiteness',(32.0/Powerups[i].Default
+			.Charge)*Clamp(Powerups[i].Charge,0,Powerups[i]
+			.Default.Charge)*ElementScale,2*ElementScale,1,1,1,1);
+		Pos += Step;
+	}
 }
 
 // Inventory (Weapon listings, current weapon)
 function DrawInventory( Canvas Canvas )
 {
-	// TODO
+	local Weapon W, WL[64];
+	local int i, j, m, n, WN;
+	local float Pos, Step, XL, YL, BarL;
+	// Weapon listings on bottom border
+	ForEach AllActors(Class'Weapon',W)
+	{
+		if ( n >= 64 )
+			break;
+		if ( W.Owner != PO )
+			continue;
+		WL[n] = W;
+		n++;
+	}
+	// Sort weapons
+	for ( i=0; i<n-1; i++ )
+	{
+		m = i;
+		for ( j=i+1; j<n; j++ )
+			if ( WL[j].InventoryGroup > WL[m].InventoryGroup )
+				m = j;
+		W = WL[m];
+		WL[m] = WL[i];
+		WL[i] = W;
+	}
+	Canvas.Font = Arial(10);
+	Step = 16*ElementScale;
+	Pos = -Step*0.5*n+0.5*Step;
+	for ( i=n-1; i>=0; i-- )
+	{
+		W = WL[i];
+		WN = W.InventoryGroup;
+		if ( WN == 10 )
+			WN = 0;
+		if ( W != PO.Weapon )
+			Canvas.DrawColor = WhiteColor*0.5;
+		else
+			Canvas.DrawColor = WhiteColor;
+		Canvas.StrLen(WN,XL,YL);
+		Canvas.SetPos(0.5*Canvas.ClipX+Pos-0.5*XL,
+			Canvas.ClipY-16-0.5*YL);
+		Canvas.DrawText(WN);
+		if ( W.IsA('MWeapon') )
+		{
+			Canvas.DrawColor = WhiteColor;
+			Canvas.Style = ERenderStyle.STY_Modulated;
+			Canvas.SetPos(0.5*Canvas.ClipX+Pos-6*ElementScale,
+				Canvas.ClipY-16-0.75*YL-32*ElementScale);
+			Canvas.DrawTile(Texture'Gradient0',4*ElementScale,
+				32*ElementScale,64,1,1,1);
+			Canvas.SetPos(0.5*Canvas.ClipX+Pos+2*ElementScale,
+				Canvas.ClipY-16-0.75*YL-32*ElementScale);
+			Canvas.DrawTile(Texture'Gradient0',4*ElementScale,
+				32*ElementScale,64,1,1,1);
+			Canvas.Style = ERenderStyle.STY_Translucent;
+			// Health bar and ammo bar
+			if ( W != PO.Weapon )
+				Canvas.DrawColor.R = 64;
+			else
+				Canvas.DrawColor.R = 128;
+			Canvas.DrawColor.G = 0;
+			Canvas.DrawColor.B = 0;
+			BarL = (32/MWeapon(W).Default.Health)*Clamp(MWeapon(W)
+				.Health,0,MWeapon(W).Default.Health)
+				*ElementScale;
+			Canvas.SetPos(0.5*Canvas.ClipX+Pos-6*ElementScale,
+				Canvas.ClipY-16-0.75*YL
+				-BarL);
+			Canvas.DrawTile(Texture'Whiteness',4*ElementScale,BarL,
+				1,1,1,1);
+			if ( W != PO.Weapon )
+				Canvas.DrawColor.G = 64;
+			else
+				Canvas.DrawColor.G = 128;
+			if ( W.AmmoType != None )
+			{
+				BarL = (32/W.AmmoType.MaxAmmo)*Clamp(W
+					.AmmoType.AmmoAmount,0,W.AmmoType
+					.MaxAmmo)*ElementScale;
+				Canvas.SetPos(0.5*Canvas.ClipX+Pos+2
+					*ElementScale,Canvas.ClipY-16-0.75*YL
+					-BarL);
+				Canvas.DrawTile(Texture'Whiteness',4
+					*ElementScale,BarL,1,1,1,1);
+			}
+		}
+		else
+		{
+			Canvas.DrawColor = WhiteColor;
+			Canvas.Style = ERenderStyle.STY_Modulated;
+			Canvas.SetPos(0.5*Canvas.ClipX+Pos-2*ElementScale,
+				Canvas.ClipY-16-0.75*YL-32*ElementScale);
+			Canvas.DrawTile(Texture'Gradient0',4*ElementScale,
+				32*ElementScale,64,1,1,1);
+			Canvas.Style = ERenderStyle.STY_Translucent;
+			// Just ammo bar
+			if ( W != PO.Weapon )
+			{
+				Canvas.DrawColor.R = 64;
+				Canvas.DrawColor.G = 64;
+			}
+			else
+			{
+				Canvas.DrawColor.R = 128;
+				Canvas.DrawColor.G = 128;
+			}
+			Canvas.DrawColor.B = 0;
+			if ( W.AmmoType != None )
+			{
+				BarL = (32/W.AmmoType.MaxAmmo)*Clamp(W
+					.AmmoType.AmmoAmount,0,W.AmmoType
+					.MaxAmmo)*ElementScale;
+				Canvas.SetPos(0.5*Canvas.ClipX+Pos-2
+					*ElementScale,Canvas.ClipY-16-0.75*YL
+					-BarL);
+				Canvas.DrawTile(Texture'Whiteness',4
+					*ElementScale,BarL,1,1,1,1);
+			}
+		}
+		Pos += Step;
+	}
+	// Current weapon status on bottom right corner
+	if ( PO.Weapon == None )
+		return;
+	W = PO.Weapon;
+	if ( W.IsA('MWeapon') )
+	{
+		Pos = -Step*1.5;
+		Canvas.SetPos(Canvas.ClipX-16-320*ElementScale,
+			Canvas.ClipY-16+Pos-6*ElementScale);
+		Canvas.Style = ERenderStyle.STY_Modulated;
+		Canvas.DrawTile(Texture'Gradient0',320*ElementScale,
+			12*ElementScale,64,1,1,1);
+		Canvas.Style = ERenderStyle.STY_Translucent;
+		Canvas.DrawColor.R = 128;
+		Canvas.DrawColor.G = 0;
+		Canvas.DrawColor.B = 0;
+		BarL = (320/MWeapon(W).Default.Health)*Clamp(MWeapon(W).Health,
+			0,MWeapon(W).Default.Health)*ElementScale;
+		Canvas.SetPos(Canvas.ClipX-16-BarL,Canvas.ClipY-16+Pos-6
+			*ElementScale);
+		Canvas.DrawTile(Texture'Whiteness',BarL,12*ElementScale,1,1,1,
+			1);
+		Pos += Step;
+		Canvas.SetPos(Canvas.ClipX-16-320*ElementScale,
+			Canvas.ClipY-16+Pos-6*ElementScale);
+		Canvas.Style = ERenderStyle.STY_Modulated;
+		Canvas.DrawTile(Texture'Gradient0',320*ElementScale,
+			12*ElementScale,64,1,1,1);
+		Canvas.Style = ERenderStyle.STY_Translucent;
+		Canvas.DrawColor.R = 128;
+		Canvas.DrawColor.G = 128;
+		Canvas.DrawColor.B = 0;
+		BarL = (320/W.AmmoType.MaxAmmo)*Clamp(W.AmmoType.AmmoAmount,0,W
+			.AmmoType.MaxAmmo)*ElementScale;
+		Canvas.SetPos(Canvas.ClipX-16-BarL,Canvas.ClipY-16+Pos-6
+			*ElementScale);
+		Canvas.DrawTile(Texture'Whiteness',BarL,12*ElementScale,1,1,1,
+			1);
+	}
+	else
+	{
+		Pos = -Step*0.5;
+		Canvas.SetPos(Canvas.ClipX-16-320*ElementScale,
+			Canvas.ClipY-16+Pos-6*ElementScale);
+		Canvas.Style = ERenderStyle.STY_Modulated;
+		Canvas.DrawTile(Texture'Gradient0',320*ElementScale,
+			12*ElementScale,64,1,1,1);
+		Canvas.Style = ERenderStyle.STY_Translucent;
+		Canvas.DrawColor.R = 128;
+		Canvas.DrawColor.G = 128;
+		Canvas.DrawColor.B = 0;
+		BarL = (320/W.AmmoType.MaxAmmo)*Clamp(W.AmmoType.AmmoAmount,0,W
+			.AmmoType.MaxAmmo)*ElementScale;
+		Canvas.SetPos(Canvas.ClipX-16-BarL,Canvas.ClipY-16+Pos-6
+			*ElementScale);
+		Canvas.DrawTile(Texture'Whiteness',BarL,12*ElementScale,1,1,1,
+			1);
+	}
 }
 
 // Deathmatch synopsis
@@ -619,15 +931,8 @@ function DrawDMSynopsis( Canvas Canvas )
 		Ranks[m] = Ranks[i];
 		Ranks[i] = temp;
 	}
-	Canvas.Font = Arial(16);
+	Canvas.Font = Arial(12);
 	Canvas.StrLen("M",XL,YL);
-	Canvas.DrawColor = WhiteColor;
-	Canvas.Style = ERenderStyle.STY_Modulated;
-	Canvas.bNoSmooth = False;
-	Canvas.SetPos(0,0.5*Canvas.ClipY-YL*1.5);
-	Canvas.DrawTile(Texture'Gradient0',Canvas.ClipX*0.25,YL*5,0,0,128,1);
-	Canvas.bNoSmooth = True;
-	Canvas.Style = ERenderStyle.STY_Translucent;
 	Pos = -YL*1.5;
 	for ( i=0; i<3; i++ )
 	{
@@ -656,26 +961,20 @@ function DrawTDMSynopsis( Canvas Canvas )
 	for ( i=0; i<4; i++ )
 		if ( (GRI.Teams[i] != None) && (GRI.Teams[i].Size > 0) )
 			nteams++;
-	Step = 72*ElementScale;
+	Step = 48*ElementScale;
 	Pos = -Step*0.5*nteams+0.5*Step;
-	Canvas.DrawColor = WhiteColor;
-	Canvas.Style = ERenderStyle.STY_Modulated;
-	Canvas.bNoSmooth = False;
-	Canvas.SetPos(0,0.5*Canvas.ClipY-16-Step*0.5*nteams);
-	Canvas.DrawTile(Texture'Gradient0',Canvas.ClipX*0.25,Step*nteams+32,0,
-		0,128,1);
-	Canvas.bNoSmooth = True;
-	Canvas.Style = ERenderStyle.STY_Translucent;
-	Canvas.Font = Arial(24);
+	Canvas.Font = Arial(12);
 	Canvas.StrLen("M",XL,YL);
 	for ( i=0; i<4; i++ )
 	{
 		if ( (GRI.Teams[i] == None) || (GRI.Teams[i].Size <= 0) )
 			continue;
 		Canvas.DrawColor = TeamColor[GRI.Teams[i].TeamIndex];
-		Canvas.SetPos(4,0.5*Canvas.ClipY+Pos-0.5*Step);
+		Canvas.SetPos(4+0.5*Step-16*ElementScale,0.5*Canvas.ClipY+Pos
+			-16*ElementScale);
 		Canvas.bNoSmooth = False;
-		Canvas.DrawIcon(TeamIcon[GRI.Teams[i].TeamIndex],ElementScale);
+		Canvas.DrawIcon(TeamIcon[GRI.Teams[i].TeamIndex],
+			ElementScale*0.5);
 		Canvas.bNoSmooth = True;
 		Canvas.SetPos(4+Step,0.5*Canvas.ClipY+Pos-0.5*YL);
 		Canvas.DrawText(int(GRI.Teams[i].Score),False);
@@ -686,47 +985,58 @@ function DrawTDMSynopsis( Canvas Canvas )
 // Capture the Flag synopsis
 function DrawCTFSynopsis( Canvas Canvas )
 {
-	local CTFReplicationInfo GRI;
+	local TournamentGameReplicationInfo GRI;
+	local CTFFlag Flags[4], F;
+	local FlagBase Bases[4], B;
 	local int i, nteams, j;
 	local float XL, YL, Pos, Step;
 	local Texture CTex;
-	GRI = CTFReplicationInfo(Level.Game.GameReplicationInfo);
+	GRI = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo);
 	if ( GRI == None )
 		return;
+	ForEach AllActors(Class'CTFFlag',F)
+	{
+		if ( F.Team < 4 )
+			Flags[F.Team] = F;
+	}
+	if ( (Flags[0] == None) && (Flags[1] == None) && (Flags[2] == None)
+		&& (Flags[0] == None) )
+	{
+		DrawTDMSynopsis(Canvas);
+		return;
+	}
+	ForEach AllActors(Class'FlagBase',B)
+	{
+		if ( B.Team < 4 )
+			Bases[B.Team] = B;
+	}
 	for ( i=0; i<4; i++ )
-		if ( GRI.FlagList[i] != None )
+		if ( Bases[i] != None )
 			nteams++;
-	Step = 72*ElementScale;
+	Step = 48*ElementScale;
 	Pos = -Step*0.5*nteams+0.5*Step;
-	Canvas.DrawColor = WhiteColor;
-	Canvas.Style = ERenderStyle.STY_Modulated;
-	Canvas.bNoSmooth = False;
-	Canvas.SetPos(0,0.5*Canvas.ClipY-16-Step*0.5*nteams);
-	Canvas.DrawTile(Texture'Gradient0',Canvas.ClipX*0.25,Step*nteams+32,0,
-		0,128,1);
-	Canvas.bNoSmooth = True;
-	Canvas.Style = ERenderStyle.STY_Translucent;
-	Canvas.Font = Arial(24);
+	Canvas.Font = Arial(12);
 	Canvas.StrLen("M",XL,YL);
 	for ( i=0; i<4; i++ )
 	{
-		if ( GRI.FlagList[i] == None )
+		if ( Flags[i] == None )
 			continue;
-		Canvas.DrawColor = TeamColor[GRI.FlagList[i].Team];
-		Canvas.SetPos(4,0.5*Canvas.ClipY+Pos-0.5*Step);
+		Canvas.DrawColor = TeamColor[Flags[i].Team];
+		Canvas.SetPos(4+0.5*Step-16*ElementScale,0.5*Canvas.ClipY+Pos
+			-16*ElementScale);
 		Canvas.bNoSmooth = False;
-		if ( GRI.FlagList[i].bHome )
+		if ( Flags[i].bHome || (Flags[i].Position() == None) )
 			CTex = Texture'mh_flag';
-		else if ( GRI.FlagList[i].bHeld )
+		else if ( Flags[i].bHeld )
 			CTex = Texture'mh_flagtk';
 		else
 			CTex = Texture'mh_flagdp';
-		Canvas.DrawIcon(CTex,ElementScale);
+		Canvas.DrawIcon(CTex,ElementScale*0.5);
 		Canvas.bNoSmooth = True;
 		Canvas.SetPos(4+Step,0.5*Canvas.ClipY+Pos-0.5*YL);
 		for ( j=0; j<4; j++ )
 		{
-			if ( GRI.Teams[j].TeamIndex != GRI.FlagList[i].Team )
+			if ( GRI.Teams[j].TeamIndex != Flags[i].Team )
 				continue;
 			Canvas.DrawText(int(GRI.Teams[j].Score),False);
 			break;
@@ -749,26 +1059,20 @@ function DrawDOMSynopsis( Canvas Canvas )
 	for ( i=0; i<4; i++ )
 		if ( (GRI.Teams[i] != None) && (GRI.Teams[i].Size > 0) )
 			nteams++;
-	Step = 80*ElementScale;
+	Step = 48*ElementScale;
 	Pos = -Step*0.5*nteams+0.5*Step;
-	Canvas.DrawColor = WhiteColor;
-	Canvas.Style = ERenderStyle.STY_Modulated;
-	Canvas.bNoSmooth = False;
-	Canvas.SetPos(0,0.5*Canvas.ClipY-16-Step*0.5*nteams);
-	Canvas.DrawTile(Texture'Gradient0',Canvas.ClipX*0.25,Step*nteams+32,0,
-		0,128,1);
-	Canvas.bNoSmooth = True;
-	Canvas.Style = ERenderStyle.STY_Translucent;
-	Canvas.Font = Arial(24);
+	Canvas.Font = Arial(12);
 	Canvas.StrLen("M",XL,YL);
 	for ( i=0; i<4; i++ )
 	{
 		if ( (GRI.Teams[i] == None) || (GRI.Teams[i].Size <= 0) )
 			continue;
 		Canvas.DrawColor = TeamColor[GRI.Teams[i].TeamIndex];
-		Canvas.SetPos(4,0.5*Canvas.ClipY+Pos-0.5*Step);
+		Canvas.SetPos(4+0.5*Step-16*ElementScale,0.5*Canvas.ClipY+Pos
+			-16*ElementScale);
 		Canvas.bNoSmooth = False;
-		Canvas.DrawIcon(TeamIcon[GRI.Teams[i].TeamIndex],ElementScale);
+		Canvas.DrawIcon(TeamIcon[GRI.Teams[i].TeamIndex],
+			ElementScale*0.5);
 		Canvas.bNoSmooth = True;
 		Canvas.SetPos(4+Step,0.5*Canvas.ClipY+Pos-0.5*YL);
 		Canvas.DrawText(int(GRI.Teams[i].Score),False);
@@ -783,7 +1087,7 @@ function DrawDOMSynopsis( Canvas Canvas )
 			if ( C.ControllingTeam != GRI.Teams[i] )
 				continue;
 			Canvas.SetPos(4+(j*8+4)*ElementScale,0.5*Canvas.ClipY
-				+Pos+0.5*Step-12*ElementScale);
+				+Pos+0.5*Step-8*ElementScale);
 			Canvas.DrawIcon(Texture'mh_dot',ElementScale/8.0);
 			j++;
 		}
@@ -796,6 +1100,26 @@ function DrawDOMSynopsis( Canvas Canvas )
 function DrawASSynopsis( Canvas Canvas )
 {
 	// Nothing here (for now, maybe)
+}
+
+// Monster Hunt synopsis
+function DrawMHSynopsis( Canvas Canvas )
+{
+	// Nothing
+}
+
+// Apprehension synopsis
+function DrawAPPSynopsis( Canvas Canvas )
+{
+	// Works... mostly
+	DrawTDMSynopsis(Canvas);
+}
+
+// Singleplayer synopsis
+function DrawSPSynopsis( Canvas Canvas )
+{
+	// TODO Draw usable item "belt"
+	// (SP support is not a high priority)
 }
 
 // LMS synopsis
@@ -820,12 +1144,18 @@ function DrawSynopsis( Canvas Canvas )
 		DrawASSynopsis(Canvas);
 	else if ( HUDType == HUD_LastManStanding )
 		DrawLMSSynopsis(Canvas);
+	else if ( HUDType == HUD_MonsterHunt )
+		DrawMHSynopsis(Canvas);
+	else if ( HUDType == HUD_Apprehension )
+		DrawAPPSynopsis(Canvas);
+	else if ( HUDType == HUD_Singleplayer )
+		DrawSPSynopsis(Canvas);
 }
 
 function bool CameraTrace( Vector TraceEnd )
 {
 	local Vector TraceStart;
-	TraceStart = Class'Mutil'.Static.GetCameraSpot(self);
+	TraceStart = Class'MUtil'.Static.GetCameraSpot(self);
 	return FastTrace(TraceEnd,TraceStart);
 }
 
@@ -848,22 +1178,6 @@ function bool ValidView( Actor Other )
 			&& (PRI1.Team == PRI2.Team) )
 			return true;
 	}
-	if ( Other.IsA('Inventory') )
-	{
-		if ( !Other.IsInState('Pickup') )
-			return false;
-		if ( CameraTrace(Other.Location) )
-			return true;
-		if ( Other.IsA('MPowerup') || Other.IsA('MRefresher')
-			|| (Other.IsA('MWeapon')
-			&& MWeapon(Other).IsSuperWeapon)
-			|| Other.IsA('WarheadLauncher')
-			|| Other.IsA('EnhancedShockRifle')
-			|| Other.IsA('HealthPack')
-			|| Other.IsA('UT_ShieldBelt')
-			|| Other.IsA('UT_JumpBoots') || Other.IsA('UDamage') )
-			return true;
-	}
 	return false;
 }
 
@@ -874,7 +1188,8 @@ function DrawTargetInfo( Canvas Canvas )
 	local Pawn P;
 	local PlayerReplicationInfo PRI;
 	local Inventory I;
-	local CTFFlag F;
+	local CTFFlag F, Flags[4];
+	local FlagBase B;
 	local ControlPoint CP;
 	local FortStandard AS;
 	local Actor A;
@@ -915,89 +1230,13 @@ function DrawTargetInfo( Canvas Canvas )
 		Canvas.DrawTile(Texture'Whiteness',(128.0/P.Default.Health)
 			*Clamp(P.Health,0,P.Default.Health)*ElementScale,
 			4*ElementScale,1,1,1,1);
-	}
-	// Items
-	ForEach AllActors(Class'Inventory',I)
-	{
-		if ( !WorldToScreen(Canvas,I.Location+I.CollisionHeight
-			*vect(0,0,1),Pos) || !ValidView(I) )
-			continue;
-		if ( I.IsA('Ammo') )
-		{
-			Canvas.DrawColor.R = 128;
-			Canvas.DrawColor.G = 64;
-			Canvas.DrawColor.B = 0;
-			PN = I.ItemName@"(+"$Ammo(I).AmmoAmount$")";
-		}
-		else if ( I.IsA('Weapon') )
-		{
-			Canvas.DrawColor.R = 128;
-			Canvas.DrawColor.G = 0;
-			Canvas.DrawColor.B = 0;
-			if ( I.IsA('EnhancedShockRifle')
-				|| I.IsA('WarheadLauncher')
-				|| (I.IsA('MWeapon')
-				&& MWeapon(I).IsSuperWeapon) )
-				Canvas.DrawColor.G = 128;
-			if ( Weapon(I).AmmoType != None )
-				PN = I.Itemname@"(+"$Weapon(I).AmmoType
-					.AmmoAmount$")";
-			else
-				PN = I.Itemname@"(+"$Weapon(I)
-					.PickupAmmoCount$")";
-		}
-		else if ( I.IsA('MArmor') || I.IsA('ThighPads')
-			|| I.IsA('Armor2') )
-		{
-			Canvas.DrawColor.R = 64;
-			Canvas.DrawColor.G = 128;
-			Canvas.DrawColor.B = 0;
-			PN = I.ItemName@"(+"$I.Charge$")";
-		}
-		else if ( I.IsA('MHealth') || I.IsA('TournamentHealth') )
-		{
-			Canvas.DrawColor.R = 0;
-			Canvas.DrawColor.G = 128;
-			Canvas.DrawColor.B = 0;
-			if ( I.IsA('MRefresher') || I.IsA('HealthPack') )
-			{
-				Canvas.DrawColor.G = 64;
-				Canvas.DrawColor.B = 128;
-			}
-			if ( I.IsA('MHealth') )
-				PN = I.ItemName@"(+"$MHealth(I).HealingAmount
-					$")";
-			else
-				PN = I.ItemName@"(+"$TournamentHealth(I)
-					.HealingAmount$")";
-		}
-		else if ( I.IsA('MPowerup') || I.IsA('UT_ShieldBelt')
-			|| I.IsA('UT_Invisibility') || I.IsA('UDamage')
-			|| I.IsA('UT_JumpBoots') )
-		{
-			Canvas.DrawColor.R = 0;
-			Canvas.DrawColor.G = 64;
-			Canvas.DrawColor.B = 128;
-			PN = I.ItemName;
-		}
-		Canvas.StrLen(PN,XL,YL);
-		Canvas.SetPos(Pos.X-0.5*XL,Pos.Y-0.5*YL);
-		Canvas.DrawText(PN);
-		if ( !I.IsA('MWeapon') )
-			continue;
-		Canvas.DrawColor = WhiteColor;
-		Canvas.Style = ERenderStyle.STY_Modulated;
-		Canvas.SetPos(Pos.X-0.5*XL,Pos.Y+0.5*YL);
-		Canvas.DrawTile(Texture'Gradient0',128*ElementScale,
-			4*ElementScale,64,1,1,1);
-		Canvas.Style = ERenderStyle.STY_Translucent;
-		Canvas.DrawColor.R = 128;
-		Canvas.DrawColor.G = 0;
+		Canvas.DrawColor.R = 0;
+		Canvas.DrawColor.G = 128;
 		Canvas.DrawColor.B = 0;
-		Canvas.SetPos(Pos.X-0.5*XL,Pos.Y+0.5*YL);
-		Canvas.DrawTile(Texture'Whiteness',(128.0/MWeapon(I).Default
-			.Health)*Clamp(MWeapon(I).Health,0,MWeapon(I)
-			.Default.Health)*ElementScale,4*ElementScale,1,1,1,1);
+		Canvas.SetPos(Pos.X-64*ElementScale,Pos.Y-16*ElementScale);
+		Canvas.DrawTile(Texture'Whiteness',(128.0/4900)
+			*Clamp(P.Health-100,0,4900)*ElementScale,4
+			*ElementScale,1,1,1,1);
 	}
 	// Gametype specials
 	if ( HUDType == HUD_Domination )
@@ -1021,6 +1260,28 @@ function DrawTargetInfo( Canvas Canvas )
 	}
 	else if ( HUDType == HUD_CaptureTheFlag )
 	{
+		// Check if we're in oneflag mode
+		ForEach AllActors(Class'CTFFlag',F)
+		{
+			if ( F.Team < 4 )
+				Flags[F.Team] = F;
+		}
+		if ( (Flags[0] == None) && (Flags[1] == None)
+			&& (Flags[2] == None) && (Flags[3] == None) )
+		{
+			ForEach AllActors(Class'FlagBase',B)
+			{
+				if ( !WorldToScreen(Canvas,B.Location
+					+B.CollisionHeight*vect(0,0,1),Pos) )
+					continue;
+				Canvas.DrawColor = TeamColor[B.Team];
+				Dist = VSize(B.Location-PO.Location)/48.0;
+				PN = FlagName[B.Team]@"("$int(Dist)$"m)";
+				Canvas.StrLen(PN,XL,YL);
+				Canvas.SetPos(Pos.X-0.5*XL,Pos.Y-0.5*YL);
+				Canvas.DrawText(PN);
+			}
+		}
 		ForEach AllActors(Class'CTFFlag',F)
 		{
 			if ( !WorldToScreen(Canvas,F.Position().Location+F
@@ -1072,6 +1333,40 @@ function DrawTargetInfo( Canvas Canvas )
 			}
 		}
 	}
+	else if ( HUDType == HUD_Apprehension )
+	{
+		ForEach AllActors(Class'CTFFlag',F)
+		{
+			if ( F.Position() == None )
+				continue;
+			if ( !WorldToScreen(Canvas,F.Position().Location+F
+				.Position().CollisionHeight*vect(0,0,1),Pos) )
+				continue;
+			Canvas.DrawColor = TeamColor[F.Team];
+			Dist = VSize(F.Position().Location-PO.Location)/48.0;
+			PN = FlagName[F.Team]@"("$int(Dist)$"m)";
+			Canvas.StrLen(PN,XL,YL);
+			Canvas.SetPos(Pos.X-0.5*XL,Pos.Y-0.5*YL);
+			Canvas.DrawText(PN);
+		}
+		ForEach AllActors(Class'Actor',A)
+		{
+			if ( A.Class.Name != 'ScoreBubble' )
+				continue;
+			if ( !WorldToScreen(Canvas,A.Location,Pos) ||
+				A.bHidden )
+				continue;
+			Canvas.DrawColor.R = 255;
+			Canvas.DrawColor.G = 255;
+			Canvas.DrawColor.B = 128;
+			Dist = VSize(A.Location-PO.Location)/48.0;
+			Canvas.SetPos(Pos.X-8,Pos.Y-8);
+			Canvas.DrawIcon(Texture'mh_dot',1.0/4.0);
+			Canvas.StrLen("("$int(Dist)$"m)",XL,YL);
+			Canvas.SetPos(Pos.X-0.5*XL,Pos.Y+8);
+			Canvas.DrawText("("$int(Dist)$"m)");
+		}
+	}
 	Canvas.Font = Arial(12);
 	// Damage counters
 	ForEach AllActors(Class'MDamageCounter',DC)
@@ -1108,7 +1403,8 @@ function DrawMinimap( Canvas Canvas )
 	local Pickup Pk;
 	local Pawn P;
 	local ControlPoint CP;
-	local CTFFlag F;
+	local CTFFlag F, Flags[4];
+	local FlagBase B;
 	local FortStandard AS;
 	local Actor A;
 	local PlayerReplicationInfo PRI;
@@ -1118,56 +1414,25 @@ function DrawMinimap( Canvas Canvas )
 	local Texture CTex;
 	Canvas.bNoSmooth = False;
 	Canvas.DrawColor = WhiteColor;
-	Canvas.SetPos(Canvas.ClipX-128,0);
+	Canvas.SetPos(Canvas.ClipX-192*ElementScale,0);
 	Canvas.Style = ERenderStyle.STY_Modulated;
-	Canvas.DrawTile(Texture'Gradient0',128,128,64,1,1,1);
+	Canvas.DrawTile(Texture'Gradient0',192*ElementScale,192*ElementScale,
+		64,1,1,1);
 	Canvas.Style = ERenderStyle.STY_Translucent;
-	MapX = Canvas.ClipX-64;
-	MapY = 64;
+	MapX = Canvas.ClipX-96*ElementScale;
+	MapY = 96*ElementScale;
 	FlatRot.Yaw = PO.ViewRotation.Yaw;
-	// Weapons here
-	Canvas.DrawColor.R = 128;
-	Canvas.DrawColor.G = 128;
-	Canvas.DrawColor.B = 0;
-	foreach AllActors(Class'Weapon',W)
-	{
-		if ( !W.IsInState('Pickup') )
-			continue;
-		if ( (W.IsA('MWeapon') && !MWeapon(W).IsSuperWeapon)
-			|| (!W.IsA('MWeapon') && !W.IsA('WarheadLauncher')
-			&& !W.IsA('EnhancedShockRifle')) )
-			continue;
-		RelPos = ((W.Location-PO.Location)<<FlatRot)*0.02;
-		if ( Max(Abs(RelPos.X),Abs(RelPos.Y)) > 60 )
-			continue;
-		Canvas.SetPos(MapX+RelPos.Y-4,MapY-RelPos.X-4);
-		Canvas.DrawIcon(Texture'mh_star',1.0/8.0);
-	}
-	// Powerups here
-	Canvas.DrawColor.R = 0;
-	foreach AllActors(Class'Pickup',Pk)
-	{
-		if ( !Pk.IsInState('Pickup') )
-			continue;
-		if ( !Pk.IsA('MPowerup') && !Pk.IsA('Refresher')
-			&& !Pk.IsA('UT_ShieldBelt')
-			&& !Pk.IsA('UT_Invisibility') && !Pk.IsA('HealthPack')
-			&& !Pk.IsA('UT_JumpBoots') && !Pk.IsA('UDamage') )
-			continue;
-		RelPos = ((Pk.Location-PO.Location)<<FlatRot)*0.02;
-		if ( Max(Abs(RelPos.X),Abs(RelPos.Y)) > 60 )
-			continue;
-		Canvas.SetPos(MapX+RelPos.Y-4,MapY-RelPos.X-4);
-		Canvas.DrawIcon(Texture'mh_star',1.0/8.0);
-	}
 	// Control Points
 	if ( HUDType == HUD_Domination )
 	{
 		foreach AllActors(Class'ControlPoint',CP)
 		{
-			RelPos = ((CP.Location-PO.Location)<<FlatRot)*0.02;
-			RelPos.X = FClamp(RelPos.X,-60,60);
-			RelPos.Y = FClamp(RelPos.Y,-60,60);
+			RelPos = ((CP.Location-PO.Location)<<FlatRot)*0.05
+				*ElementScale;
+			RelPos.X = FClamp(RelPos.X,-88*ElementScale,88
+				*ElementScale);
+			RelPos.Y = FClamp(RelPos.Y,-88*ElementScale,88
+				*ElementScale);
 			if ( CP.ControllingTeam == None )
 			{
 				Canvas.DrawColor = WhiteColor;
@@ -1179,22 +1444,50 @@ function DrawMinimap( Canvas Canvas )
 					.TeamIndex];
 				CTex = TeamIcon[CP.ControllingTeam.TeamIndex];
 			}
-			Canvas.SetPos(MapX+RelPos.Y-4,MapY-RelPos.X-4);
-			Canvas.DrawIcon(CTex,1.0/8.0);
+			Canvas.SetPos(MapX+RelPos.Y-8*ElementScale,MapY
+				-RelPos.X-8*ElementScale);
+			Canvas.DrawIcon(CTex,ElementScale/4.0);
 		}
 	}
 	// Flags
 	else if ( HUDType == HUD_CaptureTheFlag )
 	{
+		// Check if we're in oneflag mode
+		foreach AllActors(Class'CTFFlag',F)
+		{
+			if ( F.Team < 4 )
+				Flags[F.Team] = F;
+		}
+		if ( (Flags[0] == None) && (Flags[1] == None)
+			&& (Flags[2] == None) && (Flags[3] == None) )
+		{
+			ForEach AllActors(Class'FlagBase',B)
+			{
+				RelPos = ((B.Location-PO.Location)<<FlatRot)
+					*0.05*ElementScale;
+				RelPos.X = FClamp(RelPos.X,-88*ElementScale,
+					88*ElementScale);
+				RelPos.Y = FClamp(RelPos.Y,-88*ElementScale,
+					88*ElementScale);
+				Canvas.DrawColor = TeamColor[B.Team];
+				Canvas.SetPos(MapX+RelPos.Y-8*ElementScale,MapY
+					-RelPos.X-8*ElementScale);
+				Canvas.DrawIcon(Texture'mh_flag',ElementScale
+					/4.0);
+			}
+		}
 		foreach AllActors(Class'CTFFlag',F)
 		{
 			RelPos = ((F.Position().Location-PO.Location)<<FlatRot)
-				*0.02;
-			RelPos.X = FClamp(RelPos.X,-60,60);
-			RelPos.Y = FClamp(RelPos.Y,-60,60);
+				*0.05*ElementScale;
+			RelPos.X = FClamp(RelPos.X,-88*ElementScale,88
+				*ElementScale);
+			RelPos.Y = FClamp(RelPos.Y,-88*ElementScale,88
+				*ElementScale);
 			Canvas.DrawColor = TeamColor[F.Team];
-			Canvas.SetPos(MapX+RelPos.Y-4,MapY-RelPos.X-4);
-			Canvas.DrawIcon(Texture'mh_flag',1.0/8.0);
+			Canvas.SetPos(MapX+RelPos.Y-8*ElementScale,MapY
+				-RelPos.X-8*ElementScale);
+			Canvas.DrawIcon(Texture'mh_flag',ElementScale/4.0);
 		}
 	}
 	// Assault targets
@@ -1202,14 +1495,18 @@ function DrawMinimap( Canvas Canvas )
 	{
 		foreach AllActors(Class'FortStandard',AS)
 		{
-			RelPos = ((AS.Location-PO.Location)<<FlatRot)*0.02;
-			RelPos.X = FClamp(RelPos.X,-60,60);
-			RelPos.Y = FClamp(RelPos.Y,-60,60);
+			RelPos = ((AS.Location-PO.Location)<<FlatRot)*0.05
+				*ElementScale;
+			RelPos.X = FClamp(RelPos.X,-88*ElementScale,88
+				*ElementScale);
+			RelPos.Y = FClamp(RelPos.Y,-88*ElementScale,88
+				*ElementScale);
 			Canvas.DrawColor.R = 128;
 			Canvas.DrawColor.G = 64;
 			Canvas.DrawColor.B = 64;
-			Canvas.SetPos(MapX+RelPos.Y-4,MapY-RelPos.X-4);
-			Canvas.DrawIcon(Texture'mh_flag',1.0/8.0);
+			Canvas.SetPos(MapX+RelPos.Y-8*ElementScale,MapY
+				-RelPos.X-8*ElementScale);
+			Canvas.DrawIcon(Texture'mh_flag',ElementScale/4.0);
 			foreach AllActors(Class'Actor',A)
 			{
 				if ( A.Event != AS.Tag )
@@ -1217,15 +1514,56 @@ function DrawMinimap( Canvas Canvas )
 				if ( A.IsA('FortStandard') )
 					continue;
 				RelPos = ((A.Location-PO.Location)<<FlatRot)
-					*0.02;
-				RelPos.X = FClamp(RelPos.X,-60,60);
-				RelPos.Y = FClamp(RelPos.Y,-60,60);
+					*0.05*ElementScale;
+				RelPos.X = FClamp(RelPos.X,-88*ElementScale,
+					88*ElementScale);
+				RelPos.Y = FClamp(RelPos.Y,-88*ElementScale,
+					88*ElementScale);
 				Canvas.DrawColor.R = 160;
 				Canvas.DrawColor.G = 128;
 				Canvas.DrawColor.B = 128;
-				Canvas.SetPos(MapX+RelPos.Y-4,MapY-RelPos.X-4);
-				Canvas.DrawIcon(Texture'mh_flag',1.0/8.0);
+				Canvas.SetPos(MapX+RelPos.Y-8*ElementScale,MapY
+					-RelPos.X-8*ElementScale);
+				Canvas.DrawIcon(Texture'mh_flag',ElementScale
+					/4.0);
 			}
+		}
+	}
+	else if ( HUDType == HUD_Apprehension )
+	{
+		foreach AllActors(Class'CTFFlag',F)
+		{
+			if ( F.Position() == None )
+				continue;
+			RelPos = ((F.Position().Location-PO.Location)<<FlatRot)
+				*0.05*ElementScale;
+			RelPos.X = FClamp(RelPos.X,-88*ElementScale,88
+				*ElementScale);
+			RelPos.Y = FClamp(RelPos.Y,-88*ElementScale,88
+				*ElementScale);
+			Canvas.DrawColor = TeamColor[F.Team];
+			Canvas.SetPos(MapX+RelPos.Y-8*ElementScale,MapY
+				-RelPos.X-8*ElementScale);
+			Canvas.DrawIcon(Texture'mh_flag',ElementScale/4.0);
+		}
+		ForEach AllActors(Class'Actor',A)
+		{
+			if ( A.Class.Name != 'ScoreBubble' )
+				continue;
+			if ( A.bHidden )
+				continue;
+			RelPos = ((A.Location-PO.Location)<<FlatRot)*0.05
+				*ElementScale;
+			RelPos.X = FClamp(RelPos.X,-88*ElementScale,88
+				*ElementScale);
+			RelPos.Y = FClamp(RelPos.Y,-88*ElementScale,88
+				*ElementScale);
+			Canvas.DrawColor.R = 255;
+			Canvas.DrawColor.G = 255;
+			Canvas.DrawColor.B = 128;
+			Canvas.SetPos(MapX+RelPos.Y-8*ElementScale,MapY
+				-RelPos.X-8*ElementScale);
+			Canvas.DrawIcon(Texture'mh_dot',ElementScale/4.0);
 		}
 	}
 	// Pawns
@@ -1235,8 +1573,8 @@ function DrawMinimap( Canvas Canvas )
 			|| P.IsA('FlockMasterPawn') || (P.IsA('FlockPawn')
 			&& !P.IsA('Bloblet')) )
 			continue;
-		RelPos = ((P.Location-PO.Location)<<FlatRot)*0.02;
-		if ( Max(Abs(RelPos.X),Abs(RelPos.Y)) > 62 )
+		RelPos = ((P.Location-PO.Location)<<FlatRot)*0.05*ElementScale;
+		if ( Max(Abs(RelPos.X),Abs(RelPos.Y)) > 92*ElementScale )
 			continue;
 		PRI = P.PlayerReplicationInfo;
 		if ( (PRI == None) || !Level.Game.bTeamGame )
@@ -1247,13 +1585,14 @@ function DrawMinimap( Canvas Canvas )
 		}
 		else
 			Canvas.DrawColor = TeamColor[PRI.Team];
-		Canvas.SetPos(MapX+RelPos.Y-2,MapY-RelPos.X-2);
-		Canvas.DrawIcon(Texture'mh_dot',1.0/16.0);
+		Canvas.SetPos(MapX+RelPos.Y-4*ElementScale,MapY-RelPos.X-4
+			*ElementScale);
+		Canvas.DrawIcon(Texture'mh_dot',ElementScale/8.0);
 	}
 	// You are here
 	Canvas.DrawColor = WhiteColor;
-	Canvas.SetPos(MapX-2,MapY-2);
-	Canvas.DrawIcon(Texture'mh_dot',1.0/16.0);
+	Canvas.SetPos(MapX-4*ElementScale,MapY-4*ElementScale);
+	Canvas.DrawIcon(Texture'mh_dot',ElementScale/8.0);
 	Canvas.bNoSmooth = True;
 }
 
@@ -1437,7 +1776,7 @@ function Message( PlayerReplicationInfo PRI, coerce string Msg, Name N )
 		CurrentPickup.LifeTime = 3+Level.TimeSeconds;
 		CurrentPickup.Message = Msg;
 	}
-	else if ( N == 'CriticalEvent' )
+	else if ( (N == 'CriticalEvent') || (N == 'MonsterCriticalEvent') )
 	{
 		CriticalMessage.LifeTime = 3+Level.TimeSeconds;
 		CriticalMessage.Message = Msg;
@@ -1481,10 +1820,12 @@ defaultproperties
 	TeamColor(1)=(R=0,G=128,B=255)
 	TeamColor(2)=(R=0,G=255,B=0)
 	TeamColor(3)=(R=255,G=255,B=0)
+	TeamColor(4)=(R=255,G=255,B=255)
 	TeamIcon(0)=Texture'mh_red'
 	TeamIcon(1)=Texture'mh_blue'
 	TeamIcon(2)=Texture'mh_green'
 	TeamIcon(3)=Texture'mh_gold'
+	TeamIcon(4)=Texture'mh_neutral'
 	GameString="Game Type"
 	TitleString="Map Title"
 	AuthorString="Author"
@@ -1494,4 +1835,5 @@ defaultproperties
 	FlagName(1)="Blue flag"
 	FlagName(2)="Green flag"
 	FlagName(3)="Gold flag"
+	FlagName(4)="Flag"
 }

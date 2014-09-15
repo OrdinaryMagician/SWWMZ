@@ -10,7 +10,6 @@ var() float Durations[10];
 var() Vector Offsets[10];
 var() bool WeaponStay;
 var() int UsedSlots;
-var() int StartingSlot;
 var bool Startup;
 var Inventory Current;
 var Vector SpawnedLoc;
@@ -50,7 +49,7 @@ Begin:
 	if ( !Startup )
 	{
 		Startup = True;
-		i = StartingSlot;
+		i = Rand(UsedSlots);
 	}
 	PlaySound(SpawnSound);
 	Current = Spawn(Items[i],,, Location+Offsets[i]+vect(0,0,1)

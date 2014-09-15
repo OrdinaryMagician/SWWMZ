@@ -39,6 +39,8 @@ Auto State Pickup
 	event Touch( Actor Other )
 	{
 		local Pawn P;
+		local int OldHealth;
+		local MDamageCounter DC;
 		if ( !ValidTouch(Other) )
 			return;
 		// no need to actually check if toucher is pawn, ValidTouch()
@@ -57,7 +59,11 @@ Auto State Pickup
 				None,self.Class);
 		PlaySound(PickupSound,,2.5);
 		P.MakeNoise(0.2);
+		OldHealth = P.Health;
 		P.Health = Max(P.Health+HealingAmount,HealingMax);
+		DC = Spawn(Class'MDamageCounter',P);
+		DC.Factor = P.Health-OldHealth;
+		DC.RealHitLocation = VRand()*FRand()*P.CollisionRadius;
 		SetRespawn();
 	}
 }

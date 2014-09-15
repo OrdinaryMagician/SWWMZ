@@ -8,7 +8,7 @@ C Currently in progress
 Alpha:
   X Start project
   X Introductory text
-  C Base classes
+  X Base classes
     X MLayer
     X MWeaponBlock
     X MWeapon
@@ -17,7 +17,7 @@ Alpha:
     X MArmor
     X MHealth
     X MPowerup
-    C MSWWMZMutator
+    X MSWWMZMutator
     X MMultiItem
     X MUtil
     X MQsm
@@ -26,7 +26,7 @@ Alpha:
     X MSpark(s)
     X MChip
     F MParticle
-    C MHUD
+    X MHUD
     X MDamageCounter
   - Weapons
     - Unlimited Chainsaw Works
@@ -118,17 +118,17 @@ Alpha:
     - Super Happy Fun Ball
       - Bounce around
       - Effective face remover
-  - Pickups
-    - Armor
-      - Armor Bonus
-      - Blast Suit
-      - War Armor
+  C Pickups
+    C Armor
+      C Armor Bonus
+      C Blast Suit
+      C War Armor
     - Health
       - Health Bonus
       - Health Cube
       - Refresher
-    - Powerups
-      - Deflector
+    C Powerups
+      C Deflector
       - Ghost Artifact
       - Ragekit
       - Gravity suppressor
